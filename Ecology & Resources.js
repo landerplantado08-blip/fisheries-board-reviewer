@@ -1,4 +1,4 @@
-// ecology.js
+// Ecology & Resources.js
 // Part 3 of 4: Ecology & Resources Board Exam Review Questions
 // Topics: Limnology, Oceanography, Marine Ecosystems, Environmental Science
 
