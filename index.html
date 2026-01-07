@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,17 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- FIREBASE (Compat Mode for easier integration) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- THE BRIDGE: Connecting your external Question Files -->
+    <script>window.quizData = {}; // Initialize container</script>
+    <script src="aquaculture.js"></script>
+    <script src="capture.js"></script>
+    <script src="ecology.js"></script>
+    <script src="postharvest.js"></script>
 
     <style>
         :root { --background: #f8fafc; --foreground: #020617; --card-bg: #ffffff; --border: #e2e8f0; }
@@ -39,7 +50,7 @@
                         <span class="text-4xl">👨‍🎓</span>
                     </div>
                     <h2 class="text-2xl font-bold mb-2">Fisheries Reviewer</h2>
-                    <p class="text-sm text-gray-500">Enter your name to start.</p>
+                    <p class="text-sm text-gray-500">Enter your name to start reviewing.</p>
                 </div>
                 <input type="text" id="username-input" class="w-full p-4 border rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition bg-transparent" placeholder="Full Name">
                 <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all">Start Session</button>
@@ -84,11 +95,11 @@
                     <h3 class="font-bold text-lg">⚓ Capture Fisheries</h3>
                 </div>
 
-                <div onclick="openSetup('Ecology & Resources')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-green-400">
-                    <h3 class="font-bold text-lg">🌱 Aquatic Resources and Ecology</h3>
+                <div onclick="openSetup('Aquatic Resources and Ecology')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-green-400">
+                    <h3 class="font-bold text-lg">🌱 Aquatic Resources & Ecology</h3>
                 </div>
 
-                <div onclick="openSetup('Post-Harvest')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-orange-400">
+                <div onclick="openSetup('Post-Harvest Fisheries')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-orange-400">
                     <h3 class="font-bold text-lg">🥫 Post-Harvest Fisheries</h3>
                 </div>
              </div>
@@ -126,10 +137,9 @@
             <div id="view-leaderboard" class="hidden">
                 <div class="card p-6 rounded-xl shadow-sm mb-4">
                     <h3 class="font-bold mb-4 flex items-center gap-2">🏆 Top Reviewers</h3>
-                    <p class="text-xs text-gray-500 mb-4">Syncing requires Database Connection.</p>
                     <div id="leaderboard-container" class="space-y-3">
                         <div class="text-center py-8">
-                            <p class="text-sm text-gray-400 mt-2">Offline Mode Active</p>
+                            <p class="text-sm text-gray-400 mt-2">Connecting...</p>
                         </div>
                     </div>
                 </div>
@@ -221,93 +231,28 @@
         <button onclick="showScreen('settings-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
     </nav>
 
-    <!-- FIREBASE & LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, updateDoc, arrayUnion, onSnapshot, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    <!-- MAIN APP LOGIC -->
+    <script>
+        // --- 1. CONFIG AREA ---
+        // 👇👇👇 PASTE FIREBASE CONFIG HERE LATER 👇👇👇
+        /*
+        const firebaseConfig = {
+            apiKey: "...",
+            authDomain: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        console.log("🔥 Firebase Connected");
+        */
+        // 👆👆👆
         
-        // --- DATASET (EMBEDDED) ---
-        // This ensures questions load even if external files fail.
-        window.quizData = {
-            "Aquaculture": [
-                { q: "Recommended slope for clay soil dike?", opts: ["1:1", "2:1", "1:2", "1:4"], a: "2:1" },
-                { q: "Calculate FCR: 1500kg feed / 1200kg fish.", opts: ["0.8", "1.25", "1.5", "1.2"], a: "1.25" },
-                { q: "Primary toxic metabolite in RAS?", opts: ["Nitrate", "Ammonia", "Nitrite", "CO2"], a: "Ammonia" },
-                { q: "Organism for Green Water Tech?", opts: ["Chlorella", "Tilapia", "Milkfish", "Carp"], a: "Chlorella" },
-                { q: "Cause of White Spot in freshwater fish?", opts: ["Virus", "Bacterium", "Protozoan", "Fungus"], a: "Protozoan" },
-                { q: "Critical live feed for Grouper larvae?", opts: ["Artemia", "Moina", "Rotifers (SS)", "Daphnia"], a: "Rotifers (SS)" },
-                { q: "Main purpose of liming ponds?", opts: ["Disinfect", "Increase Alkalinity/pH", "Kill predators", "Fertilize"], a: "Increase Alkalinity/pH" },
-                { q: "Scientific name of Milkfish?", opts: ["Oreochromis niloticus", "Chanos chanos", "Cyprinus carpio", "Clarias batrachus"], a: "Chanos chanos" },
-                { q: "Role of Artemia in hatcheries?", opts: ["Phytoplankton", "Zooplankton feed", "Water conditioner", "Probiotic"], a: "Zooplankton feed" },
-                { q: "Standard stocking density for extensive tilapia?", opts: ["1-2 pcs/sqm", "5-10 pcs/sqm", "20-50 pcs/sqm", "100+ pcs/sqm"], a: "1-2 pcs/sqm" }
-            ],
-            "Capture Fisheries": [
-                { q: "Which is an Active Gear?", opts: ["Gill net", "Fish pot", "Trawl", "Longline"], a: "Trawl" },
-                { q: "Municipal waters distance?", opts: ["7km", "10km", "15km", "20km"], a: "15km" },
-                { q: "Starboard refers to?", opts: ["Left", "Right", "Rear", "Front"], a: "Right" },
-                { q: "Closes the bottom of a purse seine?", opts: ["Float line", "Lead line", "Purse line", "Bunt"], a: "Purse line" },
-                { q: "Mesh size is measured by?", opts: ["Knot to knot (stretched)", "Diagonal", "Area", "Diameter"], a: "Knot to knot (stretched)" },
-                { q: "Device to track commercial vessels?", opts: ["GPS", "VMS", "Sonar", "Radar"], a: "VMS" },
-                { q: "Most common tuna fishing gear?", opts: ["Trawl", "Purse Seine", "Gill net", "Push net"], a: "Purse Seine" },
-                { q: "RA 10654 amends which law?", opts: ["RA 8550", "RA 7160", "PD 704", "RA 9147"], a: "RA 8550" },
-                { q: "Closed season is for?", opts: ["Spawning protection", "Vessel repair", "Holiday", "Typhoon safety"], a: "Spawning protection" },
-                { q: "Fishing with explosives is?", opts: ["Regulated", "Illegal", "Allowed with permit", "Traditional"], a: "Illegal" }
-            ],
-            "Ecology & Resources": [
-                { q: "Sharp density gradient in water?", opts: ["Halocline", "Thermocline", "Pycnocline", "Chemocline"], a: "Pycnocline" },
-                { q: "Cause of Paralytic Shellfish Poisoning?", opts: ["Sargassum", "Pyrodinium", "Caulerpa", "Kappaphycus"], a: "Pyrodinium" },
-                { q: "Mangrove aerial roots?", opts: ["Pneumatophores", "Prop roots", "Buttress", "Stilt"], a: "Pneumatophores" },
-                { q: "El Nino effect in Philippines?", opts: ["More Rain", "Drought", "Cold fronts", "Typhoons"], a: "Drought" },
-                { q: "Phytoplankton trophic level?", opts: ["Primary Producer", "Primary Consumer", "Decomposer", "Top Predator"], a: "Primary Producer" },
-                { q: "Study of inland waters?", opts: ["Oceanography", "Limnology", "Hydrology", "Geology"], a: "Limnology" },
-                { q: "Zone with light penetration?", opts: ["Aphotic", "Photic", "Abyssal", "Benthic"], a: "Photic" },
-                { q: "Coral bleaching is caused by?", opts: ["Pollution", "Temperature stress", "Overfishing", "Dynamite"], a: "Temperature stress" },
-                { q: "Catadromous fish (e.g. Eel) migrate?", opts: ["Sea to River", "River to Sea", "River to Lake", "Sea to Ocean"], a: "River to Sea" },
-                { q: "Red Tide organism group?", opts: ["Diatoms", "Dinoflagellates", "Blue-green algae", "Seaweeds"], a: "Dinoflagellates" }
-            ],
-            "Post-Harvest": [
-                { q: "Primary concern in canned products?", opts: ["Salmonella", "E. coli", "C. botulinum", "Vibrio"], a: "C. botulinum" },
-                { q: "Stiffening of fish muscle after death?", opts: ["Autolysis", "Rigor Mortis", "Putrefaction", "Oxidation"], a: "Rigor Mortis" },
-                { q: "Histamine poisoning fish family?", opts: ["Scombridae", "Cichlidae", "Cyprinidae", "Serranidae"], a: "Scombridae" },
-                { q: "First step in HACCP?", opts: ["Determine CCP", "Hazard Analysis", "Monitor", "Verify"], a: "Hazard Analysis" },
-                { q: "Surimi is made from?", opts: ["Minced washed meat", "Fermented guts", "Dried skin", "Fish bones"], a: "Minced washed meat" },
-                { q: "Indicator of spoilage in marine fish?", opts: ["TMA", "Lactic Acid", "Lipids", "Protein"], a: "TMA" },
-                { q: "Temperature for chilling fish?", opts: ["0-4°C", "10-15°C", "-18°C", "25°C"], a: "0-4°C" },
-                { q: "Canning method for commercial sterility?", opts: ["Pasteurization", "Thermal Processing (Retort)", "Blanching", "Drying"], a: "Thermal Processing (Retort)" },
-                { q: "Salt used in fermentation controls?", opts: ["Taste", "Bad bacteria", "Color", "Texture"], a: "Bad bacteria" },
-                { q: "Vacuum packaging removes?", opts: ["Light", "Oxygen", "Water", "Bacteria"], a: "Oxygen" }
-            ]
-        };
+        let db = null; // Placeholder for DB if config is missing
 
-        // --- PASTE FIREBASE CONFIG HERE LATER ---
-        // const firebaseConfig = { ... };
-        
-        let db = null;
-        // if (typeof firebaseConfig !== 'undefined') {
-        //     const app = initializeApp(firebaseConfig);
-        //     db = getFirestore(app);
-        // }
-
-        // --- CLOUD FUNCTIONS (Inactive until Config Added) ---
-        window.syncUserToCloud = async (name) => {
-            if(!db) return;
-            // ... (Firebase logic hidden for now)
-        };
-
-        window.saveScoreToCloud = async (subject, score) => {
-            if(!db) return;
-            // ... (Firebase logic hidden for now)
-        };
-
-        window.fetchLeaderboard = async () => {
-            if(!db) {
-                document.getElementById('leaderboard-container').innerHTML = "<div class='text-center py-8'><p class='text-sm text-gray-500'>Offline Mode.</p><p class='text-xs text-gray-400'>Connect Firebase to see rankings.</p></div>";
-                return;
-            }
-            // ... (Firebase logic hidden for now)
-        };
-
-        // --- APP LOGIC (Global Scope) ---
+        // --- 2. GLOBAL STATE ---
         let currentQuiz = [];
         let qIndex = 0;
         let score = 0;
@@ -315,152 +260,211 @@
         let geminiKey = localStorage.getItem('geminiKey');
         let currentUser = localStorage.getItem('username');
 
-        window.handleLogin = () => {
+        // --- 3. INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+            
+            // Auth Check
+            if (currentUser) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('home-screen').classList.remove('hidden');
+                updateUserDisplay();
+                if(db) syncUserToCloud(currentUser);
+            }
+            
+            updateDashboard();
+            checkKey();
+        });
+
+        // --- 4. FUNCTIONS ---
+        function handleLogin() {
             const name = document.getElementById('username-input').value.trim();
             if (!name) return alert("Please enter a name!");
             currentUser = name;
             localStorage.setItem('username', name);
-            if(window.syncUserToCloud) window.syncUserToCloud(name);
+            if(db) syncUserToCloud(name);
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('home-screen').classList.remove('hidden');
             updateUserDisplay();
-        };
+        }
 
-        window.logout = () => {
+        function logout() {
             localStorage.removeItem('username');
             location.reload();
-        };
-        
-        window.setTheme = (t) => { localStorage.setItem('theme', t); if(t==='dark') document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark'); };
-        
-        window.updateUserDisplay = () => {
+        }
+
+        function updateUserDisplay() {
             document.getElementById('user-greeting').textContent = currentUser;
             document.getElementById('settings-username').textContent = currentUser;
-        };
+        }
 
-        window.startQuiz = (count) => {
+        function openSetup(sub) {
+            activeSubject = sub;
+            document.getElementById('setup-subject').textContent = sub;
+            document.getElementById('setup-screen').classList.add('active');
+        }
+
+        function closeSubScreen() {
+            document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
+        }
+
+        function startQuiz(count) {
+            // BRIDGE LOGIC: Check if questions exist
             let pool = [];
+            
             if (activeSubject === "Mock Exam") {
-                Object.values(window.quizData).forEach(arr => pool.push(...arr));
+                // Combine all available questions
+                Object.values(window.quizData || {}).forEach(arr => pool.push(...arr));
             } else {
-                pool = window.quizData[activeSubject];
+                // Try to find exact key
+                pool = window.quizData ? window.quizData[activeSubject] : [];
             }
-            if(!pool || pool.length === 0) { alert("No questions found!"); return; }
-            pool = pool.sort(() => 0.5 - Math.random());
+
+            // Fallback for "Ecology" name mismatch if file uses different name
+            if (!pool || pool.length === 0) {
+                if(activeSubject.includes("Ecology") && window.quizData["Ecology & Resources"]) {
+                    pool = window.quizData["Ecology & Resources"];
+                }
+                else if(activeSubject.includes("Post-Harvest") && window.quizData["Post-Harvest"]) {
+                    pool = window.quizData["Post-Harvest"];
+                }
+            }
+
+            if(!pool || pool.length === 0) {
+                const keys = window.quizData ? Object.keys(window.quizData).join(", ") : "None";
+                alert(`Error: No questions found for "${activeSubject}".\n\nLoaded Subjects: ${keys}\n\nCheck your .js file names and content!`);
+                return;
+            }
+
+            // Shuffle
+            pool = [...pool].sort(() => 0.5 - Math.random());
             const actualCount = Math.min(count, pool.length);
             currentQuiz = pool.slice(0, actualCount);
-            qIndex = 0; score = 0;
+            
+            qIndex = 0; 
+            score = 0;
             document.getElementById('q-total').textContent = currentQuiz.length;
             document.getElementById('quiz-lbl').textContent = activeSubject;
+            
             closeSubScreen();
             document.getElementById('quiz-screen').classList.add('active');
             loadQuestion();
-        };
+        }
 
-        window.loadQuestion = () => {
+        function loadQuestion() {
             const q = currentQuiz[qIndex];
             document.getElementById('q-curr').textContent = qIndex + 1;
             document.getElementById('progress').style.width = `${((qIndex)/currentQuiz.length)*100}%`;
             document.getElementById('q-text').textContent = q.q;
             document.getElementById('quiz-controls').classList.add('hidden');
+            
             const opts = document.getElementById('options');
             opts.innerHTML = '';
             q.opts.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 card rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition";
+                btn.className = "w-full text-left p-4 card rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition border border-transparent";
                 btn.textContent = opt;
-                btn.onclick = () => window.checkAnswer(btn, opt, q.a);
+                // STANDARD ONCLICK HANDLER
+                btn.onclick = function() { checkAnswer(this, opt, q.a); };
                 opts.appendChild(btn);
             });
-        };
+        }
 
-        window.checkAnswer = (btn, sel, corr) => {
+        function checkAnswer(btn, sel, corr) {
+            // Prevent double clicking
             if(document.getElementById('quiz-controls').classList.contains('flex')) return;
+            
             if (sel === corr) {
                 score++;
                 btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
             } else {
                 btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                // Highlight correct one
                 Array.from(document.getElementById('options').children).forEach(b => {
                     if(b.textContent === corr) b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
                 });
             }
-            document.getElementById('quiz-controls').classList.remove('hidden');
-            document.getElementById('quiz-controls').className = "mt-8 flex justify-between animate-fade-in";
-        };
+            
+            // Show Next Button
+            const controls = document.getElementById('quiz-controls');
+            controls.classList.remove('hidden');
+            controls.className = "mt-8 flex justify-between animate-fade-in";
+        }
 
-        window.nextQuestion = () => {
+        function nextQuestion() {
             qIndex++;
-            if(qIndex < currentQuiz.length) window.loadQuestion();
-            else window.finishQuiz();
-        };
+            if(qIndex < currentQuiz.length) loadQuestion();
+            else finishQuiz();
+        }
 
-        window.finishQuiz = () => {
+        function finishQuiz() {
             const pct = Math.round((score / currentQuiz.length) * 100);
             
             // Save Local
             let stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[], subjectStats: {}};
             stats.totalQ += currentQuiz.length;
             stats.scores.push({ date: new Date().toLocaleDateString(), subj: activeSubject, score: pct });
+            
             if (!stats.subjectStats[activeSubject]) stats.subjectStats[activeSubject] = { total: 0, correct: 0 };
             stats.subjectStats[activeSubject].total += currentQuiz.length;
             stats.subjectStats[activeSubject].correct += score;
+            
             localStorage.setItem('fisheriesPerformance', JSON.stringify(stats));
             
-            if(window.saveScoreToCloud) window.saveScoreToCloud(activeSubject, pct);
+            // Save Cloud
+            if(db) saveScoreToCloud(activeSubject, pct);
 
             updateDashboard();
             document.getElementById('final-score').textContent = pct + "%";
-            document.getElementById('final-msg').textContent = pct > 75 ? "Excellent!" : "Keep reviewing.";
+            document.getElementById('final-msg').textContent = pct > 75 ? "Excellent work!" : "Keep reviewing.";
+            
             document.getElementById('quiz-screen').classList.remove('active');
             document.getElementById('result-screen').classList.add('active');
-        };
+        }
 
-        window.updateDashboard = () => {
+        function updateDashboard() {
             const stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[], subjectStats: {}};
             document.getElementById('home-count').textContent = stats.scores.length;
             const avg = stats.scores.length ? Math.round(stats.scores.reduce((a,b)=>a+b.score,0)/stats.scores.length) : 0;
             document.getElementById('home-avg').textContent = avg + "%";
             
-            // Activity List
             const cont = document.getElementById('stats-container');
             cont.innerHTML = '';
             if(stats.scores.length === 0) cont.innerHTML = '<p class="text-gray-400 text-center">No quizzes yet.</p>';
+            
             stats.scores.slice(-5).reverse().forEach(s => {
                 cont.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-100 dark:border-gray-800"><div><p class="font-semibold">${s.subj}</p><p class="text-xs text-gray-400">${s.date}</p></div><span class="font-bold ${s.score>=75?'text-green-500':'text-orange-500'}">${s.score}%</span></div>`;
             });
 
-            // Bars
             const breakCont = document.getElementById('subject-breakdown');
             breakCont.innerHTML = '';
-            Object.keys(window.quizData || {}).forEach(sub => {
+            // Display all subjects, even if not taken yet
+            const subjects = ["Aquaculture", "Capture Fisheries", "Aquatic Resources and Ecology", "Post-Harvest Fisheries"];
+            subjects.forEach(sub => {
                 const subData = stats.subjectStats[sub] || { total: 0, correct: 0 };
                 const subPct = subData.total === 0 ? 0 : Math.round((subData.correct / subData.total) * 100);
                 breakCont.innerHTML += `<div><div class="flex justify-between text-xs mb-1"><span>${sub}</span><span class="font-bold">${subPct}%</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ${subPct >= 75 ? 'bg-green-500' : 'bg-blue-500'}" style="width: ${subPct}%"></div></div></div>`;
             });
-        };
+        }
 
-        window.switchDashboardTab = (tab) => {
+        function switchDashboardTab(tab) {
             if(tab === 'my-stats') {
                 document.getElementById('view-my-stats').classList.remove('hidden');
                 document.getElementById('view-leaderboard').classList.add('hidden');
                 document.getElementById('tab-my-stats').classList.add('bg-white', 'shadow-sm');
                 document.getElementById('tab-leaderboard').classList.remove('bg-white', 'shadow-sm');
-                window.updateDashboard();
+                updateDashboard();
             } else {
                 document.getElementById('view-my-stats').classList.add('hidden');
                 document.getElementById('view-leaderboard').classList.remove('hidden');
                 document.getElementById('tab-leaderboard').classList.add('bg-white', 'shadow-sm');
                 document.getElementById('tab-my-stats').classList.remove('bg-white', 'shadow-sm');
-                if(window.fetchLeaderboard) window.fetchLeaderboard();
+                if(db) fetchLeaderboard();
+                else document.getElementById('leaderboard-container').innerHTML = "<div class='text-center py-8'><p class='text-sm text-gray-500'>Offline Mode.</p><p class='text-xs text-gray-400'>Connect Database to see ranking.</p></div>";
             }
         }
 
-        window.openSetup = (sub) => { activeSubject = sub; document.getElementById('setup-subject').textContent = sub; document.getElementById('setup-screen').classList.add('active'); };
-        window.closeSubScreen = () => document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
-        window.resetProgress = () => { if(confirm("Reset local data?")) { localStorage.removeItem('fisheriesPerformance'); location.reload(); } };
-
-        window.showScreen = (id) => {
+        function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             if(id !== 'login-screen') document.getElementById('login-screen').classList.add('hidden');
             document.getElementById(id).classList.remove('hidden');
@@ -469,7 +473,17 @@
             if(id.includes('subject')) document.querySelector('nav button:nth-child(2)').classList.replace('text-gray-400', 'text-blue-600');
             if(id.includes('dashboard')) document.querySelector('nav button:nth-child(3)').classList.replace('text-gray-400', 'text-blue-600');
             if(id.includes('settings')) document.querySelector('nav button:nth-child(4)').classList.replace('text-gray-400', 'text-blue-600');
-        };
+        }
+
+        function setTheme(t) {
+            localStorage.setItem('theme', t);
+            if(t==='dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+
+        function resetProgress() {
+            if(confirm("Reset local data?")) { localStorage.removeItem('fisheriesPerformance'); location.reload(); }
+        }
 
         // --- GEMINI AI ---
         function checkKey() {
@@ -511,9 +525,62 @@
         document.getElementById('ai-guide-btn').onclick = () => askGemini(`I just scored ${document.getElementById('final-score').textContent} on a ${activeSubject} quiz. Give me 3 bullet points of study tips.`);
         document.getElementById('mock-exam-btn').onclick = () => { openSetup('Mock Exam'); };
 
-        if(currentUser) { 
-            updateUserDisplay();
+        // --- CLOUD PLACEHOLDERS ---
+        async function syncUserToCloud(name) {
+            let uid = localStorage.getItem('uid');
+            if(!uid) {
+                uid = name.replace(/\s+/g, '').toLowerCase() + '-' + Math.floor(Math.random() * 10000);
+                localStorage.setItem('uid', uid);
+            }
+            try {
+                await db.collection("users").doc(uid).set({
+                    name: name,
+                    lastLogin: new Date().toISOString(),
+                }, { merge: true });
+            } catch(e) { console.error("Sync Error", e); }
         }
+
+        async function saveScoreToCloud(subject, score) {
+            const uid = localStorage.getItem('uid');
+            if(!uid) return;
+            try {
+                await db.collection("users").doc(uid).update({
+                    history: firebase.firestore.FieldValue.arrayUnion({
+                        subject: subject,
+                        score: score,
+                        date: new Date().toISOString()
+                    }),
+                    totalScore: score
+                });
+            } catch(e) { console.error("Save Error", e); }
+        }
+
+        async function fetchLeaderboard() {
+            const cont = document.getElementById('leaderboard-container');
+            cont.innerHTML = '<div class="loader"></div>';
+            try {
+                const snapshot = await db.collection("users").get();
+                let users = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if(data.history && data.history.length > 0) {
+                        const avg = Math.round(data.history.reduce((a, b) => a + b.score, 0) / data.history.length);
+                        users.push({ name: data.name, avg: avg, quizzes: data.history.length });
+                    }
+                });
+                users.sort((a, b) => b.avg - a.avg);
+                cont.innerHTML = '';
+                if(users.length === 0) cont.innerHTML = "<p>No data yet.</p>";
+                users.forEach((u, i) => {
+                    let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
+                    cont.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-100 dark:border-gray-800"><div class="flex items-center gap-3"><span class="font-bold w-6 text-center">${medal}</span><div><p class="font-semibold">${u.name}</p><p class="text-xs text-gray-400">${u.quizzes} quizzes taken</p></div></div><span class="font-bold text-blue-600">${u.avg}%</span></div>`;
+                });
+            } catch(e) {
+                console.error(e);
+                cont.innerHTML = "<p class='text-red-500'>Error fetching data.</p>";
+            }
+        }
+
     </script>
 </body>
 </html>
