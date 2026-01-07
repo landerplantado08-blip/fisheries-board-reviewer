@@ -1,4 +1,4 @@
-// aquaculture.js
+// Aquaculture.js
 // Batch 1: Questions 1 - 100
 // Focus: General Principles, Engineering, Water Quality, Nutrition
 
