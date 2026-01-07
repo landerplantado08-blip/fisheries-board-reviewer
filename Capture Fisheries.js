@@ -1,4 +1,4 @@
-// capture.js
+// Capture Fisheries.js
 // Part 2 of 4: Capture Fisheries Board Exam Review Questions
 // Topics: Gear Design, Methods, Navigation, Seamanship, Laws (RA 10654)
 
