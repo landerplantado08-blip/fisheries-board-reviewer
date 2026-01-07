@@ -3,25 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LCP Fisheries Board Reviewer</title>
+    <title>LCP Fisheries Board Reviewer (All-in-One)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
-    <!-- FIREBASE (Compat Mode) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-    <!-- THE BRIDGE: Connecting your external Question Files -->
-    <script>
-        // Initialize the container safely
-        window.quizData = window.quizData || {}; 
-    </script>
-    <!-- Ensure these file names match your GitHub files exactly -->
-    <script src="aquaculture.js"></script>
-    <script src="capture.js"></script>
-    <script src="ecology.js"></script>
-    <script src="postharvest.js"></script>
 
     <style>
         :root { --background: #f8fafc; --foreground: #020617; --card-bg: #ffffff; --border: #e2e8f0; }
@@ -32,172 +17,96 @@
         .sub-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; transform: translateX(100%); transition: transform 0.3s; background: var(--background); overflow-y: auto; padding-top: 5rem; }
         .sub-screen.active { transform: translateX(0); }
         .markdown-body ul { list-style: disc; padding-left: 1.5rem; }
-        .loader { border: 4px solid var(--border); border-top: 4px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .active-nav { color: #2563eb; }
-        .disabled-card { opacity: 0.6; filter: grayscale(1); pointer-events: none; }
+        .option-btn { cursor: pointer; user-select: none; }
+        .option-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body class="antialiased">
 
-    <!-- Header -->
+    <script>
+        // ======================================================
+        // DATABASE: PASTE YOUR QUESTIONS HERE INSIDE THE LISTS
+        // ======================================================
+        window.quizData = {
+            
+            "Aquaculture": [
+                { q: "Recommended slope for clay soil dike?", opts: ["1:1", "2:1", "1:2", "1:4"], a: "2:1" },
+                { q: "Calculate FCR: 1500kg feed / 1200kg fish.", opts: ["0.8", "1.25", "1.5", "1.2"], a: "1.25" },
+                { q: "Primary toxic metabolite in RAS?", opts: ["Nitrate", "Ammonia", "Nitrite", "CO2"], a: "Ammonia" },
+                { q: "Scientific name of Milkfish?", opts: ["Chanos chanos", "Oreochromis niloticus", "Lates calcarifer", "Mugil cephalus"], a: "Chanos chanos" },
+                { q: "Main purpose of liming ponds?", opts: ["Disinfect", "Increase Alkalinity/pH", "Kill predators", "Fertilize"], a: "Increase Alkalinity/pH" }
+                // PASTE MORE AQUACULTURE QUESTIONS HERE (Make sure to use commas!)
+            ],
+
+            "Capture Fisheries": [
+                { q: "Which is an Active Gear?", opts: ["Gill net", "Fish pot", "Trawl", "Longline"], a: "Trawl" },
+                { q: "Municipal waters distance?", opts: ["7km", "10km", "15km", "20km"], a: "15km" },
+                { q: "Starboard refers to?", opts: ["Left", "Right", "Rear", "Front"], a: "Right" },
+                { q: "Mesh size is measured by?", opts: ["Knot to knot (stretched)", "Diagonal", "Area", "Diameter"], a: "Knot to knot (stretched)" }
+                // PASTE MORE CAPTURE QUESTIONS HERE
+            ],
+
+            "Ecology & Resources": [
+                { q: "Sharp density gradient in water?", opts: ["Halocline", "Thermocline", "Pycnocline", "Chemocline"], a: "Pycnocline" },
+                { q: "Cause of Paralytic Shellfish Poisoning?", opts: ["Sargassum", "Pyrodinium", "Caulerpa", "Kappaphycus"], a: "Pyrodinium" },
+                { q: "Mangrove aerial roots?", opts: ["Pneumatophores", "Prop roots", "Buttress", "Stilt"], a: "Pneumatophores" }
+                // PASTE MORE ECOLOGY QUESTIONS HERE
+            ],
+
+            "Post-Harvest": [
+                { q: "Primary concern in canned products?", opts: ["Salmonella", "E. coli", "C. botulinum", "Vibrio"], a: "C. botulinum" },
+                { q: "Stiffening of fish muscle after death?", opts: ["Autolysis", "Rigor Mortis", "Putrefaction", "Oxidation"], a: "Rigor Mortis" },
+                { q: "Histamine poisoning fish family?", opts: ["Scombridae", "Cichlidae", "Cyprinidae", "Serranidae"], a: "Scombridae" }
+                // PASTE MORE POST-HARVEST QUESTIONS HERE
+            ],
+
+            "Mock Exam": [] // Leave empty, fills automatically
+        };
+    </script>
     <header class="fixed top-0 w-full h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 z-40">
-        <h1 id="header-title" class="font-bold text-lg text-blue-600">LCP Reviewer</h1>
+        <h1 class="font-bold text-lg text-blue-600">LCP Reviewer</h1>
     </header>
 
     <main>
-        <!-- LOGIN SCREEN -->
         <div id="login-screen" class="screen flex flex-col items-center justify-center z-50 absolute inset-0 bg-white dark:bg-slate-950">
             <div class="card p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
-                <div class="mb-6">
-                    <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-4xl">👨‍🎓</span>
-                    </div>
-                    <h2 class="text-2xl font-bold mb-2">Fisheries Reviewer</h2>
-                    <p class="text-sm text-gray-500">Enter your name to start reviewing.</p>
-                </div>
-                <input type="text" id="username-input" class="w-full p-4 border rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 outline-none transition bg-transparent" placeholder="Full Name">
-                <button onclick="handleLogin()" id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all">Start Session</button>
+                <div class="mb-6"><span class="text-4xl">👨‍🎓</span><h2 class="text-2xl font-bold mt-4">Fisheries Reviewer</h2></div>
+                <input type="text" id="username-input" class="w-full p-4 border rounded-xl mb-4 bg-transparent" placeholder="Enter Name">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg">Start</button>
             </div>
         </div>
 
-        <!-- HOME -->
         <div id="home-screen" class="screen hidden">
-             <div class="mb-6 flex justify-between items-center">
-                <div>
-                    <h2 class="text-2xl font-bold">Hi, <span id="user-greeting" class="text-blue-600">Student</span>! 👋</h2>
-                    <p class="text-gray-500 text-sm">Ready to top the board exam?</p>
-                </div>
-             </div>
-
+             <div class="mb-6"><h2 class="text-2xl font-bold">Hi, <span id="user-greeting" class="text-blue-600">Student</span>!</h2></div>
              <div class="grid grid-cols-2 gap-4">
-                <!-- Stats -->
-                <div class="card p-4 rounded-xl text-center shadow-sm">
-                    <p class="text-xs text-gray-500 uppercase">My Mastery</p>
-                    <p id="home-avg" class="text-3xl font-black text-blue-600">--%</p>
-                </div>
-                 <div class="card p-4 rounded-xl text-center shadow-sm">
-                    <p class="text-xs text-gray-500 uppercase">My Quizzes</p>
-                    <p id="home-count" class="text-3xl font-black text-blue-600">0</p>
-                </div>
-
-                <!-- Mock Exam -->
-                <div id="mock-exam-btn" class="col-span-2 card p-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg cursor-pointer flex items-center justify-between">
-                    <div>
-                        <h3 class="text-xl font-bold">📚 Take Mock Exam</h3>
-                        <p class="text-sm opacity-90">All subjects mixed.</p>
-                    </div>
-                    <span class="text-2xl">➔</span>
-                </div>
-
-                <!-- SUBJECT BUTTONS -->
-                <div onclick="openSetup('Aquaculture')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-blue-400">
-                    <h3 class="font-bold text-lg">🐟 Aquaculture</h3>
-                </div>
+                <div class="card p-4 rounded-xl text-center shadow-sm"><p class="text-xs text-gray-500 uppercase">Mastery</p><p id="home-avg" class="text-3xl font-black text-blue-600">0%</p></div>
+                <div class="card p-4 rounded-xl text-center shadow-sm"><p class="text-xs text-gray-500 uppercase">Quizzes</p><p id="home-count" class="text-3xl font-black text-blue-600">0</p></div>
                 
-                <div onclick="openSetup('Capture Fisheries')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-teal-400">
-                    <h3 class="font-bold text-lg">⚓ Capture Fisheries</h3>
-                </div>
-
-                <div onclick="openSetup('Aquatic Resources and Ecology')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-green-400">
-                    <h3 class="font-bold text-lg">🌱 Aquatic Resources and Ecology</h3>
-                </div>
-
-                <div onclick="openSetup('Post-Harvest Fisheries')" class="card p-4 rounded-xl shadow-sm cursor-pointer hover:border-blue-500 transition border-l-4 border-orange-400">
-                    <h3 class="font-bold text-lg">🥫 Post-Harvest Fisheries</h3>
+                <div onclick="openSetup('Aquaculture')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-blue-400 hover:bg-gray-50"><h3 class="font-bold">🐟 Aquaculture</h3></div>
+                <div onclick="openSetup('Capture Fisheries')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-teal-400 hover:bg-gray-50"><h3 class="font-bold">⚓ Capture</h3></div>
+                <div onclick="openSetup('Ecology & Resources')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-green-400 hover:bg-gray-50"><h3 class="font-bold">🌱 Ecology</h3></div>
+                <div onclick="openSetup('Post-Harvest')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-orange-400 hover:bg-gray-50"><h3 class="font-bold">🥫 Post-Harvest</h3></div>
+                
+                <div onclick="openSetup('Mock Exam')" class="col-span-2 card p-6 rounded-xl bg-blue-600 text-white shadow-lg cursor-pointer flex justify-between items-center">
+                    <div><h3 class="font-bold text-xl">📚 Mock Exam</h3><p class="text-sm opacity-90">Mixed subjects</p></div><span class="text-2xl">➔</span>
                 </div>
              </div>
         </div>
 
-        <!-- SUBJECTS (Hidden but kept for Nav) -->
-        <div id="subjects-screen" class="screen hidden">
-            <h2 class="font-bold text-xl mb-4">Select Subject</h2>
-            <div id="subject-list" class="space-y-3"></div>
-        </div>
-
-        <!-- DASHBOARD -->
-        <div id="dashboard-screen" class="screen hidden">
-            <!-- Toggle -->
-            <div class="flex p-1 bg-gray-100 dark:bg-slate-800 rounded-lg mb-6">
-                <button onclick="switchDashboardTab('my-stats')" id="tab-my-stats" class="flex-1 py-2 text-sm font-bold rounded-md bg-white dark:bg-slate-700 shadow-sm transition-all">My Stats</button>
-                <button onclick="switchDashboardTab('leaderboard')" id="tab-leaderboard" class="flex-1 py-2 text-sm font-medium text-gray-500 hover:text-blue-600 transition-all">Class Leaderboard</button>
-            </div>
-
-            <!-- My Stats View -->
-            <div id="view-my-stats">
-                <div class="card p-6 rounded-xl shadow-sm mb-6">
-                    <h3 class="font-bold mb-4 flex items-center gap-2">📊 Performance Report</h3>
-                    <div id="subject-breakdown" class="space-y-4">
-                        <!-- Bars injected here -->
-                    </div>
-                </div>
-                <div class="card p-6 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold mb-4">Recent Activity</h3>
-                    <div id="stats-container" class="space-y-3 text-sm"></div>
-                </div>
-            </div>
-
-            <!-- Leaderboard View -->
-            <div id="view-leaderboard" class="hidden">
-                <div class="card p-6 rounded-xl shadow-sm mb-4">
-                    <h3 class="font-bold mb-4 flex items-center gap-2">🏆 Top Reviewers</h3>
-                    <div id="leaderboard-container" class="space-y-3">
-                        <div class="text-center py-8">
-                            <p class="text-sm text-gray-400 mt-2">Connect Firebase to see data.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <button onclick="resetProgress()" class="w-full py-3 text-red-500 text-sm border border-red-200 rounded-lg hover:bg-red-50 mt-4">Reset My Local Data</button>
-        </div>
-
-        <!-- SETTINGS -->
-        <div id="settings-screen" class="screen hidden">
-            <div class="max-w-md mx-auto space-y-6">
-                <div class="card p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold mb-2">👤 Account</h3>
-                    <p class="text-sm mb-4">Logged in as: <span id="settings-username" class="font-bold text-blue-600">User</span></p>
-                    <button onclick="logout()" class="text-sm text-red-500 font-medium">Log Out</button>
-                </div>
-
-                <div class="card p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold mb-2">🤖 Gemini API Key</h3>
-                    <p class="text-xs text-gray-500 mb-3">Required for AI features.</p>
-                    <input type="password" id="api-key" class="w-full p-3 border rounded-lg bg-transparent mb-3" placeholder="Paste Key Here">
-                    <button id="save-key" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Save Key</button>
-                    <p id="key-status" class="text-center text-xs mt-2 h-4"></p>
-                </div>
-
-                <div class="card p-6 rounded-xl shadow-sm">
-                    <h3 class="font-bold mb-4">Theme</h3>
-                    <div class="flex gap-4 justify-center">
-                        <button onclick="setTheme('light')" class="p-2 border rounded hover:bg-gray-100">☀️ Light</button>
-                        <button onclick="setTheme('dark')" class="p-2 border rounded hover:bg-gray-800">🌙 Dark</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SUB SCREENS (Setup, Quiz, Result, AI) -->
         <div id="setup-screen" class="sub-screen p-6 flex flex-col items-center justify-center text-center">
             <h2 id="setup-subject" class="text-2xl font-bold text-blue-600 mb-6">Subject</h2>
             <div class="w-full max-w-sm space-y-3">
-                <button onclick="startQuiz(10)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">10 Questions</button>
-                <button onclick="startQuiz(25)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">25 Questions</button>
-                <button onclick="startQuiz(50)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">50 Questions</button>
+                <button onclick="startQuiz(10)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold">10 Questions</button>
+                <button onclick="startQuiz(25)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold">25 Questions</button>
                 <button onclick="closeSubScreen()" class="mt-6 text-gray-500">Cancel</button>
             </div>
         </div>
 
         <div id="quiz-screen" class="sub-screen p-4">
             <div class="max-w-2xl mx-auto">
-                <div class="flex justify-between text-sm font-bold mb-2 text-gray-500">
-                    <span id="quiz-lbl">Subject</span>
-                    <span><span id="q-curr">1</span>/<span id="q-total">10</span></span>
-                </div>
+                <div class="flex justify-between text-sm font-bold mb-2 text-gray-500"><span id="quiz-lbl">Subject</span><span><span id="q-curr">1</span>/<span id="q-total">10</span></span></div>
                 <div class="h-2 bg-gray-200 rounded-full mb-6"><div id="progress" class="h-2 bg-blue-600 rounded-full w-0 transition-all"></div></div>
-                <div id="q-text" class="text-lg font-medium mb-6 leading-relaxed"></div>
+                <div id="q-text" class="text-lg font-medium mb-6 leading-relaxed">Loading...</div>
                 <div id="options" class="space-y-3"></div>
                 <div id="quiz-controls" class="hidden mt-8 flex justify-between">
                     <button onclick="finishQuiz()" class="text-red-500 font-bold">End</button>
@@ -210,97 +119,35 @@
             <div class="card p-8 rounded-2xl shadow-xl w-full max-w-md">
                 <h2 class="text-2xl font-bold mb-2">Result</h2>
                 <div id="final-score" class="text-6xl font-black text-blue-600 mb-4">0%</div>
-                <p id="final-msg" class="text-gray-500 mb-8">Keep studying!</p>
                 <button onclick="closeSubScreen()" class="w-full py-3 bg-gray-100 rounded-lg font-bold mb-2">Done</button>
-                <button id="ai-guide-btn" class="gemini-feature w-full py-3 bg-purple-100 text-purple-700 rounded-lg font-bold">✨ Get AI Study Guide</button>
             </div>
         </div>
-        
-        <div id="ai-modal" class="fixed inset-0 bg-black/80 hidden z-[60] flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl p-6 h-[80vh] flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-bold text-lg">AI Assistant</h3>
-                    <button onclick="document.getElementById('ai-modal').classList.add('hidden')" class="text-2xl">&times;</button>
-                </div>
-                <div id="ai-content" class="flex-grow overflow-y-auto markdown-body p-2"></div>
-            </div>
-        </div>
-
     </main>
 
-    <nav class="fixed bottom-0 w-full h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center z-40">
-        <button onclick="showScreen('home-screen')" class="nav-btn active-nav p-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></button>
-        <button onclick="showScreen('subjects-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></button>
-        <button onclick="showScreen('dashboard-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>
-        <button onclick="showScreen('settings-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
-    </nav>
-
-    <!-- MAIN APP LOGIC -->
     <script>
-        // --- 1. CONFIG AREA ---
-        // 👇👇👇 PASTE FIREBASE CONFIG HERE LATER 👇👇👇
-        /*
-        const firebaseConfig = {
-            apiKey: "...",
-            authDomain: "...",
-            projectId: "...",
-            storageBucket: "...",
-            messagingSenderId: "...",
-            appId: "..."
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        console.log("🔥 Firebase Connected");
-        */
-        // 👆👆👆
-        
-        let db = null; // Placeholder for DB if config is missing
-
-        // --- 2. GLOBAL STATE ---
+        // State Variables
         let currentQuiz = [];
         let qIndex = 0;
         let score = 0;
         let activeSubject = "";
-        let geminiKey = localStorage.getItem('geminiKey');
         let currentUser = localStorage.getItem('username');
-        let isAnswered = false; // Fixed: Used to prevent double clicks
 
-        // --- 3. INIT ---
-        document.addEventListener('DOMContentLoaded', () => {
-            if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
-            
-            // Auth Check
-            if (currentUser) {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('home-screen').classList.remove('hidden');
-                updateUserDisplay();
-                if(db) syncUserToCloud(currentUser);
-            }
-            
-            updateDashboard();
-            checkKey();
-        });
-
-        // --- 4. FUNCTIONS ---
-        function handleLogin() {
-            const name = document.getElementById('username-input').value.trim();
-            if (!name) return alert("Please enter a name!");
-            currentUser = name;
-            localStorage.setItem('username', name);
-            if(db) syncUserToCloud(name);
+        // Initialization
+        if (currentUser) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('home-screen').classList.remove('hidden');
-            updateUserDisplay();
-        }
-
-        function logout() {
-            localStorage.removeItem('username');
-            location.reload();
-        }
-
-        function updateUserDisplay() {
             document.getElementById('user-greeting').textContent = currentUser;
-            document.getElementById('settings-username').textContent = currentUser;
+            updateStats();
+        }
+
+        function handleLogin() {
+            const name = document.getElementById('username-input').value.trim();
+            if (!name) return alert("Enter name");
+            currentUser = name;
+            localStorage.setItem('username', name);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('home-screen').classList.remove('hidden');
+            document.getElementById('user-greeting').textContent = currentUser;
         }
 
         function openSetup(sub) {
@@ -311,281 +158,115 @@
 
         function closeSubScreen() {
             document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
+            updateStats();
         }
 
         function startQuiz(count) {
-            // BRIDGE LOGIC: Check if questions exist & Map Keys
             let pool = [];
-            let mappedSubject = activeSubject;
-
-            // SMART KEY MAPPER: Matches Button Title to JS File Key
-            if(activeSubject === "Aquatic Resources and Ecology") mappedSubject = "Ecology & Resources"; // Default key in my prev code
-            if(activeSubject === "Post-Harvest Fisheries") mappedSubject = "Post-Harvest"; // Default key in my prev code
-            
-            // Try explicit lookup first
             if (activeSubject === "Mock Exam") {
-                Object.values(window.quizData || {}).forEach(arr => pool.push(...arr));
+                Object.values(window.quizData).forEach(arr => pool.push(...arr));
             } else {
-                if (window.quizData && window.quizData[activeSubject]) {
-                    pool = window.quizData[activeSubject];
-                } else if (window.quizData && window.quizData[mappedSubject]) {
-                    pool = window.quizData[mappedSubject];
-                }
+                pool = window.quizData[activeSubject];
             }
 
-            if(!pool || pool.length === 0) {
-                const keys = window.quizData ? Object.keys(window.quizData).join(", ") : "None";
-                alert(`Error: No questions found for "${activeSubject}".\n\nLoaded Subjects: ${keys}\n\nMake sure your .js files match these keys:\n- Aquaculture\n- Capture Fisheries\n- Ecology & Resources (or Aquatic Resources and Ecology)\n- Post-Harvest (or Post-Harvest Fisheries)`);
+            // SAFETY CHECK
+            if (!pool || pool.length === 0) {
+                alert("No questions found for " + activeSubject + ". Please add questions in the script tag.");
                 return;
             }
 
             // Shuffle
             pool = [...pool].sort(() => 0.5 - Math.random());
-            const actualCount = Math.min(count, pool.length);
-            currentQuiz = pool.slice(0, actualCount);
-            
-            qIndex = 0; 
+            currentQuiz = pool.slice(0, count);
+            qIndex = 0;
             score = 0;
+
+            // Update UI
             document.getElementById('q-total').textContent = currentQuiz.length;
             document.getElementById('quiz-lbl').textContent = activeSubject;
-            
-            closeSubScreen();
+            document.getElementById('setup-screen').classList.remove('active');
             document.getElementById('quiz-screen').classList.add('active');
+            
             loadQuestion();
         }
 
         function loadQuestion() {
-            isAnswered = false; // Reset lock
             const q = currentQuiz[qIndex];
             document.getElementById('q-curr').textContent = qIndex + 1;
             document.getElementById('progress').style.width = `${((qIndex)/currentQuiz.length)*100}%`;
             document.getElementById('q-text').textContent = q.q;
-            document.getElementById('quiz-controls').classList.add('hidden');
             
-            const opts = document.getElementById('options');
-            opts.innerHTML = '';
+            const optsContainer = document.getElementById('options');
+            optsContainer.innerHTML = '';
+            document.getElementById('quiz-controls').classList.add('hidden');
+            document.getElementById('quiz-controls').classList.remove('flex');
+
             q.opts.forEach(opt => {
                 const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 card rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition border border-transparent";
+                btn.className = "option-btn w-full text-left p-4 card rounded-lg hover:bg-blue-50 transition border-2 border-transparent";
                 btn.textContent = opt;
+                // CRITICAL: Explicit click handler
                 btn.onclick = function() { checkAnswer(this, opt, q.a); };
-                opts.appendChild(btn);
+                optsContainer.appendChild(btn);
             });
         }
 
-        function checkAnswer(btn, sel, corr) {
-            // FIX: Use variable instead of class check for reliability
-            if(isAnswered) return;
-            isAnswered = true;
+        function checkAnswer(btn, selected, correct) {
+            // Prevent double clicking by checking if controls are visible
+            if (!document.getElementById('quiz-controls').classList.contains('hidden')) return;
+
+            const allBtns = document.querySelectorAll('.option-btn');
             
-            if (sel === corr) {
+            if (selected === correct) {
                 score++;
                 btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                btn.classList.remove('border-transparent');
             } else {
                 btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                btn.classList.remove('border-transparent');
+                
                 // Highlight correct one
-                Array.from(document.getElementById('options').children).forEach(b => {
-                    if(b.textContent === corr) b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                allBtns.forEach(b => {
+                    if (b.textContent === correct) {
+                        b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+                        b.classList.remove('border-transparent');
+                    }
                 });
             }
-            
-            // Show Next Button
-            const controls = document.getElementById('quiz-controls');
-            controls.classList.remove('hidden');
-            controls.className = "mt-8 flex justify-between animate-fade-in";
+
+            document.getElementById('quiz-controls').classList.remove('hidden');
+            document.getElementById('quiz-controls').classList.add('flex');
         }
 
         function nextQuestion() {
             qIndex++;
-            if(qIndex < currentQuiz.length) loadQuestion();
-            else finishQuiz();
+            if (qIndex < currentQuiz.length) {
+                loadQuestion();
+            } else {
+                finishQuiz();
+            }
         }
 
         function finishQuiz() {
             const pct = Math.round((score / currentQuiz.length) * 100);
             
-            // Save Local
-            let stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[], subjectStats: {}};
-            stats.totalQ += currentQuiz.length;
-            stats.scores.push({ date: new Date().toLocaleDateString(), subj: activeSubject, score: pct });
-            
-            if (!stats.subjectStats[activeSubject]) stats.subjectStats[activeSubject] = { total: 0, correct: 0 };
-            stats.subjectStats[activeSubject].total += currentQuiz.length;
-            stats.subjectStats[activeSubject].correct += score;
-            
-            localStorage.setItem('fisheriesPerformance', JSON.stringify(stats));
-            
-            // Save Cloud
-            if(db) saveScoreToCloud(activeSubject, pct);
+            // Save Stats
+            let stats = JSON.parse(localStorage.getItem('fisheriesStats')) || { count: 0, totalScore: 0 };
+            stats.count++;
+            stats.totalScore += pct;
+            localStorage.setItem('fisheriesStats', JSON.stringify(stats));
 
-            updateDashboard();
             document.getElementById('final-score').textContent = pct + "%";
-            document.getElementById('final-msg').textContent = pct > 75 ? "Excellent work!" : "Keep reviewing.";
-            
             document.getElementById('quiz-screen').classList.remove('active');
             document.getElementById('result-screen').classList.add('active');
         }
 
-        function updateDashboard() {
-            const stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[], subjectStats: {}};
-            document.getElementById('home-count').textContent = stats.scores.length;
-            const avg = stats.scores.length ? Math.round(stats.scores.reduce((a,b)=>a+b.score,0)/stats.scores.length) : 0;
+        function updateStats() {
+            let stats = JSON.parse(localStorage.getItem('fisheriesStats')) || { count: 0, totalScore: 0 };
+            document.getElementById('home-count').textContent = stats.count;
+            const avg = stats.count ? Math.round(stats.totalScore / stats.count) : 0;
             document.getElementById('home-avg').textContent = avg + "%";
-            
-            // Activity List
-            const cont = document.getElementById('stats-container');
-            cont.innerHTML = '';
-            if(stats.scores.length === 0) cont.innerHTML = '<p class="text-gray-400 text-center">No quizzes yet.</p>';
-            
-            stats.scores.slice(-5).reverse().forEach(s => {
-                cont.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-100 dark:border-gray-800"><div><p class="font-semibold">${s.subj}</p><p class="text-xs text-gray-400">${s.date}</p></div><span class="font-bold ${s.score>=75?'text-green-500':'text-orange-500'}">${s.score}%</span></div>`;
-            });
-
-            // Bars
-            const breakCont = document.getElementById('subject-breakdown');
-            breakCont.innerHTML = '';
-            const subjects = ["Aquaculture", "Capture Fisheries", "Aquatic Resources and Ecology", "Post-Harvest Fisheries"];
-            subjects.forEach(sub => {
-                const subData = stats.subjectStats[sub] || { total: 0, correct: 0 };
-                const subPct = subData.total === 0 ? 0 : Math.round((subData.correct / subData.total) * 100);
-                breakCont.innerHTML += `<div><div class="flex justify-between text-xs mb-1"><span>${sub}</span><span class="font-bold">${subPct}%</span></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full ${subPct >= 75 ? 'bg-green-500' : 'bg-blue-500'}" style="width: ${subPct}%"></div></div></div>`;
-            });
         }
-
-        function switchDashboardTab(tab) {
-            if(tab === 'my-stats') {
-                document.getElementById('view-my-stats').classList.remove('hidden');
-                document.getElementById('view-leaderboard').classList.add('hidden');
-                document.getElementById('tab-my-stats').classList.add('bg-white', 'shadow-sm');
-                document.getElementById('tab-leaderboard').classList.remove('bg-white', 'shadow-sm');
-                updateDashboard();
-            } else {
-                document.getElementById('view-my-stats').classList.add('hidden');
-                document.getElementById('view-leaderboard').classList.remove('hidden');
-                document.getElementById('tab-leaderboard').classList.add('bg-white', 'shadow-sm');
-                document.getElementById('tab-my-stats').classList.remove('bg-white', 'shadow-sm');
-                if(db) fetchLeaderboard();
-                else document.getElementById('leaderboard-container').innerHTML = "<div class='text-center py-8'><p class='text-sm text-gray-500'>Offline Mode.</p><p class='text-xs text-gray-400'>Connect Database to see ranking.</p></div>";
-            }
-        }
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            if(id !== 'login-screen') document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById(id).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-blue-600', 'text-gray-400'));
-            if(id.includes('home')) document.querySelector('nav button:nth-child(1)').classList.replace('text-gray-400', 'text-blue-600');
-            if(id.includes('subject')) document.querySelector('nav button:nth-child(2)').classList.replace('text-gray-400', 'text-blue-600');
-            if(id.includes('dashboard')) document.querySelector('nav button:nth-child(3)').classList.replace('text-gray-400', 'text-blue-600');
-            if(id.includes('settings')) document.querySelector('nav button:nth-child(4)').classList.replace('text-gray-400', 'text-blue-600');
-        }
-
-        function setTheme(t) {
-            localStorage.setItem('theme', t);
-            if(t==='dark') document.documentElement.classList.add('dark');
-            else document.documentElement.classList.remove('dark');
-        }
-
-        function resetProgress() {
-            if(confirm("Reset local data?")) { localStorage.removeItem('fisheriesPerformance'); location.reload(); }
-        }
-
-        // --- GEMINI AI ---
-        function checkKey() {
-            const has = !!geminiKey;
-            document.getElementById('key-status').textContent = has ? "✅ Key Saved" : "❌ No Key Set";
-            document.querySelectorAll('.gemini-feature').forEach(e => {
-                if(!has) e.classList.add('disabled-card');
-                else e.classList.remove('disabled-card');
-            });
-            if(has) document.getElementById('api-key').value = geminiKey;
-        }
-
-        document.getElementById('save-key').onclick = () => {
-            const k = document.getElementById('api-key').value.trim();
-            if(k) { localStorage.setItem('geminiKey', k); geminiKey = k; checkKey(); }
-        };
-
-        async function askGemini(prompt) {
-            if(!geminiKey) return;
-            const modal = document.getElementById('ai-modal');
-            const box = document.getElementById('ai-content');
-            modal.classList.remove('hidden');
-            box.innerHTML = '<div class="loader"></div>';
-            
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const data = await res.json();
-                const text = data.candidates[0].content.parts[0].text;
-                box.innerHTML = marked.parse(text);
-            } catch(e) {
-                box.innerHTML = "Error connecting to AI.";
-            }
-        }
-        
-        document.getElementById('ai-guide-btn').onclick = () => askGemini(`I just scored ${document.getElementById('final-score').textContent} on a ${activeSubject} quiz. Give me 3 bullet points of study tips.`);
-        document.getElementById('mock-exam-btn').onclick = () => { openSetup('Mock Exam'); };
-
-        // --- CLOUD PLACEHOLDERS ---
-        async function syncUserToCloud(name) {
-            let uid = localStorage.getItem('uid');
-            if(!uid) {
-                uid = name.replace(/\s+/g, '').toLowerCase() + '-' + Math.floor(Math.random() * 10000);
-                localStorage.setItem('uid', uid);
-            }
-            try {
-                await db.collection("users").doc(uid).set({
-                    name: name,
-                    lastLogin: new Date().toISOString(),
-                }, { merge: true });
-            } catch(e) { console.error("Sync Error", e); }
-        }
-
-        async function saveScoreToCloud(subject, score) {
-            const uid = localStorage.getItem('uid');
-            if(!uid) return;
-            try {
-                await db.collection("users").doc(uid).update({
-                    history: firebase.firestore.FieldValue.arrayUnion({
-                        subject: subject,
-                        score: score,
-                        date: new Date().toISOString()
-                    }),
-                    totalScore: score
-                });
-            } catch(e) { console.error("Save Error", e); }
-        }
-
-        async function fetchLeaderboard() {
-            const cont = document.getElementById('leaderboard-container');
-            cont.innerHTML = '<div class="loader"></div>';
-            try {
-                const snapshot = await db.collection("users").get();
-                let users = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if(data.history && data.history.length > 0) {
-                        const avg = Math.round(data.history.reduce((a, b) => a + b.score, 0) / data.history.length);
-                        users.push({ name: data.name, avg: avg, quizzes: data.history.length });
-                    }
-                });
-                users.sort((a, b) => b.avg - a.avg);
-                cont.innerHTML = '';
-                if(users.length === 0) cont.innerHTML = "<p>No data yet.</p>";
-                users.forEach((u, i) => {
-                    let medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1) + '.';
-                    cont.innerHTML += `<div class="flex justify-between items-center p-3 border-b border-gray-100 dark:border-gray-800"><div class="flex items-center gap-3"><span class="font-bold w-6 text-center">${medal}</span><div><p class="font-semibold">${u.name}</p><p class="text-xs text-gray-400">${u.quizzes} quizzes taken</p></div></div><span class="font-bold text-blue-600">${u.avg}%</span></div>`;
-                });
-            } catch(e) {
-                console.error(e);
-                cont.innerHTML = "<p class='text-red-500'>Error fetching data.</p>";
-            }
-        }
-
     </script>
 </body>
 </html>
