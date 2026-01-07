@@ -7,787 +7,341 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="questions.js"></script>
 
     <style>
-        :root {
-            --background: #f8fafc;
-            --foreground: #020617;
-            --card-background: #ffffff;
-            --card-foreground: #0f172a;
-            --muted-foreground: #64748b;
-            --border: #e2e8f0;
-            --header-background: #ffffff;
-            --header-shadow: rgba(0,0,0,0.05);
-            --nav-background: #ffffff;
-            --nav-shadow: rgba(0,0,0,0.1);
-        }
-        .dark {
-            --background: #020617;
-            --foreground: #f8fafc;
-            --card-background: #0f172a;
-            --card-foreground: #f1f5f9;
-            --muted-foreground: #94a3b8;
-            --border: #1e293b;
-            --header-background: #0f172a;
-            --header-shadow: rgba(255,255,255,0.05);
-            --nav-background: #0f172a;
-            --nav-shadow: rgba(255,255,255,0.1);
-        }
-        html, body { height: 100%; overflow: hidden; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--background); color: var(--foreground); }
-        .screen { box-sizing: border-box; padding: 4rem 1rem 6rem; height: 100vh; overflow-y: auto; }
-        header { background-color: var(--header-background); box-shadow: 0 2px 4px 0 var(--header-shadow); }
-        nav { background-color: var(--nav-background); box-shadow: 0 -2px 5px var(--nav-shadow); }
-        .card { background-color: var(--card-background); color: var(--card-foreground); }
-        .text-muted { color: var(--muted-foreground); }
-        .border-custom { border-color: var(--border); }
-        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .active-nav { color: #2563eb; }
-        .disabled-card { filter: grayscale(1); opacity: 0.6; cursor: not-allowed; position: relative; }
-        
-        .sub-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
-            transition: transform 0.3s ease-in-out; transform: translateX(100%);
-            background-color: var(--background); overflow-y: auto; padding-top: 5rem; padding-bottom: 2rem;
-        }
+        :root { --background: #f8fafc; --foreground: #020617; --card-bg: #ffffff; --border: #e2e8f0; }
+        .dark { --background: #020617; --foreground: #f8fafc; --card-bg: #0f172a; --border: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--background); color: var(--foreground); height: 100vh; overflow: hidden; }
+        .screen { padding: 4rem 1rem 6rem; height: 100vh; overflow-y: auto; }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border); }
+        .sub-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; transform: translateX(100%); transition: transform 0.3s; background: var(--background); overflow-y: auto; padding-top: 5rem; }
         .sub-screen.active { transform: translateX(0); }
-        
-        /* Markdown Styles */
-        .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
-        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-        .markdown-body p { margin-bottom: 0.8rem; line-height: 1.6; }
-        .markdown-body strong { color: #2563eb; }
-
-        /* Loader */
+        .markdown-body ul { list-style: disc; padding-left: 1.5rem; }
+        .loader { border: 4px solid var(--border); border-top: 4px solid #3b82f6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loader {
-            border: 4px solid var(--border); border-top: 4px solid #3b82f6;
-            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto;
-        }
-
-        .logo-container {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background-color: var(--card-background); width: 160px; height: 160px;
-            padding: 20px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--border); margin-bottom: 1.5rem;
-        }
-        .logo-initials { font-size: 3em; font-weight: 800; color: #007acc; line-height: 1; }
-        .logo-text { font-size: 0.9em; font-weight: 600; color: #005a9c; letter-spacing: 0.5px; text-align: center; }
+        .active-nav { color: #2563eb; }
+        .disabled-card { opacity: 0.6; filter: grayscale(1); pointer-events: none; }
     </style>
 </head>
 <body class="antialiased">
 
-    <div id="onboarding-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[100]">
-        <div class="card w-full max-w-md rounded-2xl shadow-2xl p-6 text-center flex flex-col items-center overflow-hidden relative h-[36rem]">
-            <button id="onboarding-skip" class="absolute top-4 right-4 text-muted hover:text-foreground z-10 font-semibold text-sm">Skip</button>
-            <div id="onboarding-slides-container" class="w-full h-full overflow-hidden">
-                <div id="onboarding-slides" class="flex transition-transform duration-300 h-full">
-                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
-                        <div class="logo-container">
-                          <div class="logo-initials">LCP</div>
-                          <span class="logo-text">Fisheries Board Reviewer</span>
-                        </div>
-                        <h2 class="text-2xl font-bold mb-2">Welcome!</h2>
-                        <p class="text-muted text-sm">The ultimate reviewer app developed by <strong>Lander Plantado</strong>.</p>
-                    </div>
-                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
-                        <h2 class="text-2xl font-bold mb-4">AI-Powered Learning</h2>
-                        <ul class="text-left space-y-3 text-muted text-sm">
-                            <li class="flex items-center gap-2">🤖 <strong>Scenario Challenge:</strong> Solve real-world problems with AI feedback.</li>
-                            <li class="flex items-center gap-2">📰 <strong>Field Intel:</strong> Get latest trends in fisheries.</li>
-                            <li class="flex items-center gap-2">📝 <strong>Study Guides:</strong> Personalized tips based on your quiz results.</li>
-                        </ul>
-                    </div>
-                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
-                         <h2 class="text-2xl font-bold mb-4">Activate Intelligence</h2>
-                         <p class="text-muted mb-4 text-sm">Enter your Gemini API key to enable the AI features. (Stored only on your device)</p>
-                         <input type="password" id="onboarding-api-key-input" class="w-full p-3 border-custom border rounded-lg mb-4 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Paste your API Key here">
-                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 hover:underline text-xs block">Get a free key from Google AI Studio</a>
-                    </div>
-                </div>
-            </div>
-            <div class="w-full px-4 mb-4">
-                <div class="flex justify-between items-center">
-                    <button id="onboarding-prev" class="text-blue-500 opacity-0" disabled>Back</button>
-                    <div id="onboarding-dots" class="flex gap-2"></div>
-                    <button id="onboarding-next" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Next</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-center px-4 z-40 border-b border-custom">
-        <h1 id="header-title" class="text-lg font-bold text-blue-600">Home</h1>
+    <header class="fixed top-0 w-full h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 z-40">
+        <h1 id="header-title" class="font-bold text-lg text-blue-600">LCP Reviewer</h1>
     </header>
 
     <main>
         <div id="home-screen" class="screen">
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="card p-5 rounded-xl shadow-sm text-center border border-custom">
-                    <h3 class="text-sm font-semibold text-muted uppercase tracking-wider">Overall Mastery</h3>
-                    <p id="home-overall-average" class="text-4xl font-extrabold text-blue-600 mt-2">--%</p>
+             <div class="grid grid-cols-2 gap-4">
+                <div class="card p-4 rounded-xl text-center shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase">Mastery</p>
+                    <p id="home-avg" class="text-3xl font-black text-blue-600">--%</p>
                 </div>
-                 <div class="card p-5 rounded-xl shadow-sm text-center border border-custom">
-                    <h3 class="text-sm font-semibold text-muted uppercase tracking-wider">Quizzes Taken</h3>
-                    <p id="home-quizzes-taken" class="text-4xl font-extrabold text-blue-600 mt-2">0</p>
+                 <div class="card p-4 rounded-xl text-center shadow-sm">
+                    <p class="text-xs text-gray-500 uppercase">Quizzes</p>
+                    <p id="home-count" class="text-3xl font-black text-blue-600">0</p>
                 </div>
-                
-                <div id="mock-exam-card" class="md:col-span-2 card-hover bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-xl shadow-lg cursor-pointer relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-20"><svg width="60" height="60" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
-                    <h3 class="text-xl font-bold">📚 Mock Board Exam</h3>
-                    <p class="mt-1 text-blue-100 text-sm">Simulate the actual 100-item licensure exam.</p>
+                <div id="mock-exam-btn" class="col-span-2 card p-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg cursor-pointer">
+                    <h3 class="text-xl font-bold">📚 Take Mock Exam</h3>
+                    <p class="text-sm opacity-90">Randomized items from all subjects.</p>
                 </div>
-                
-                 <div id="scenario-challenge-card" class="gemini-feature md:col-span-2 card-hover bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white p-6 rounded-xl shadow-lg cursor-pointer relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-20"><svg width="60" height="60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg></div>
-                    <h3 class="text-xl font-bold">✨ AI Scenario Challenge</h3>
-                    <p class="mt-1 text-purple-100 text-sm">Solve complex field problems generated by AI.</p>
+                <div id="ai-scenario-btn" class="gemini-feature col-span-2 card p-6 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-lg cursor-pointer">
+                    <h3 class="text-xl font-bold">✨ Scenario Challenge</h3>
+                    <p class="text-sm opacity-90">Solve practical field problems with AI.</p>
                 </div>
-                
-                 <div id="field-intel-card" class="gemini-feature md:col-span-2 card-hover bg-gradient-to-r from-teal-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg cursor-pointer relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-20"><svg width="60" height="60" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div>
-                    <h3 class="text-xl font-bold">✨ Fisheries Field Intel</h3>
-                    <p class="mt-1 text-teal-100 text-sm">Latest trends and updates powered by Gemini.</p>
+                <div id="ai-intel-btn" class="gemini-feature col-span-2 card p-6 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-lg cursor-pointer">
+                    <h3 class="text-xl font-bold">✨ Field Intel</h3>
+                    <p class="text-sm opacity-90">Latest fisheries trends & updates.</p>
                 </div>
              </div>
         </div>
-        
+
         <div id="subjects-screen" class="screen hidden">
-            <h2 class="text-xl font-bold mb-4">Choose a Subject</h2>
-            <div id="subject-list-container" class="space-y-3"></div>
+            <h2 class="font-bold text-xl mb-4">Select Subject</h2>
+            <div id="subject-list" class="space-y-3"></div>
         </div>
-        
+
         <div id="dashboard-screen" class="screen hidden">
-            <div id="dashboard-content" class="space-y-6">
-                <div class="card p-6 rounded-xl shadow-md">
-                    <h3 class="text-lg font-bold mb-4">Performance Chart</h3>
-                    <div id="score-chart" class="w-full h-48 flex justify-around items-end gap-2 border-b border-l border-custom pb-2 pl-2"></div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold mb-3">Detailed Stats</h3>
-                    <div id="subject-details" class="space-y-3"></div>
-                </div>
+            <div class="card p-6 rounded-xl shadow-sm mb-4">
+                <h3 class="font-bold mb-4">Performance</h3>
+                <div id="stats-container" class="space-y-3"></div>
             </div>
+            <button onclick="localStorage.removeItem('fisheriesPerformance'); location.reload()" class="w-full py-3 text-red-500 text-sm">Reset All Progress</button>
         </div>
 
         <div id="settings-screen" class="screen hidden">
-             <div class="w-full max-w-md mx-auto space-y-6">
-                <div class="card rounded-xl shadow-sm p-6 border border-custom">
-                    <h3 class="text-lg font-bold mb-2">🤖 Gemini API Key</h3>
-                    <p class="text-muted text-sm mb-4">Required for AI features. Stored locally on your device.</p>
-                    <input type="password" id="api-key-input" class="w-full p-3 border-custom border rounded-lg mb-2 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Paste API Key here">
-                    <p id="api-key-status" class="text-xs mb-4 text-center h-4"></p>
-                    <button id="save-api-key-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">Save Key</button>
-                    <button id="remove-api-key-btn" class="w-full mt-2 text-red-500 text-sm font-semibold hover:underline">Remove Key</button>
+            <div class="max-w-md mx-auto space-y-6">
+                <div class="card p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold mb-2">🤖 Gemini API Key</h3>
+                    <p class="text-xs text-gray-500 mb-3">Required for AI features.</p>
+                    <input type="password" id="api-key" class="w-full p-3 border rounded-lg bg-transparent mb-3" placeholder="Paste Key Here">
+                    <button id="save-key" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Save Key</button>
+                    <p id="key-status" class="text-center text-xs mt-2 h-4"></p>
                 </div>
-                 <div class="card rounded-xl shadow-sm p-6 border border-custom">
-                    <h3 class="text-lg font-bold mb-4">Appearance</h3>
-                    <div class="flex justify-around">
-                        <button data-theme="light" class="theme-btn flex flex-col items-center gap-2 text-muted hover:text-blue-500">
-                            <div class="w-12 h-12 bg-white border-2 border-gray-200 rounded-full shadow-sm"></div> Light
-                        </button>
-                         <button data-theme="dark" class="theme-btn flex flex-col items-center gap-2 text-muted hover:text-blue-500">
-                            <div class="w-12 h-12 bg-slate-900 border-2 border-slate-700 rounded-full shadow-sm"></div> Dark
-                        </button>
+                <div class="card p-6 rounded-xl shadow-sm">
+                    <h3 class="font-bold mb-4">Theme</h3>
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="setTheme('light')" class="p-2 border rounded hover:bg-gray-100">☀️ Light</button>
+                        <button onclick="setTheme('dark')" class="p-2 border rounded hover:bg-gray-800">🌙 Dark</button>
                     </div>
                 </div>
-             </div>
-        </div>
-        
-        <div id="item-selection-screen" class="sub-screen p-4 flex flex-col items-center justify-center text-center">
-            <div class="card w-full max-w-md rounded-2xl shadow-xl p-8 border border-custom">
-                <h2 id="item-select-subject" class="text-2xl font-bold mb-2 text-blue-600"></h2>
-                <p class="text-muted mb-8 text-sm">How many items do you want to answer?</p>
-                <div id="item-buttons" class="flex flex-col gap-3">
-                    <button data-items="10" class="item-select-btn w-full bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold py-3 px-6 rounded-lg transition-colors">10 Items</button>
-                    <button data-items="25" class="item-select-btn w-full bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold py-3 px-6 rounded-lg transition-colors">25 Items</button>
-                    <button data-items="50" class="item-select-btn w-full bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 font-bold py-3 px-6 rounded-lg transition-colors">50 Items</button>
-                </div>
-                <button id="back-to-subjects-btn" class="mt-8 text-muted font-medium hover:text-foreground">Cancel</button>
             </div>
         </div>
 
-        <div id="quiz-container" class="sub-screen p-4">
-            <div class="w-full max-w-3xl mx-auto">
+        <div id="setup-screen" class="sub-screen p-6 flex flex-col items-center justify-center text-center">
+            <h2 id="setup-subject" class="text-2xl font-bold text-blue-600 mb-6">Subject</h2>
+            <div class="w-full max-w-sm space-y-3">
+                <button onclick="startQuiz(10)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">10 Questions</button>
+                <button onclick="startQuiz(25)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">25 Questions</button>
+                <button onclick="startQuiz(50)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold transition">50 Questions</button>
+                <button onclick="closeSubScreen()" class="mt-6 text-gray-500">Cancel</button>
+            </div>
+        </div>
+
+        <div id="quiz-screen" class="sub-screen p-4">
+            <div class="max-w-2xl mx-auto">
+                <div class="flex justify-between text-sm font-bold mb-2 text-gray-500">
+                    <span id="quiz-lbl">Subject</span>
+                    <span><span id="q-curr">1</span>/<span id="q-total">10</span></span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full mb-6"><div id="progress" class="h-2 bg-blue-600 rounded-full w-0 transition-all"></div></div>
+                <div id="q-text" class="text-lg font-medium mb-6 leading-relaxed"></div>
+                <div id="options" class="space-y-3"></div>
+                <div id="quiz-controls" class="hidden mt-8 flex justify-between">
+                    <button onclick="finishQuiz()" class="text-red-500 font-bold">End</button>
+                    <button onclick="nextQuestion()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg">Next ➜</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-screen" class="sub-screen p-6 flex flex-col items-center justify-center text-center">
+            <div class="card p-8 rounded-2xl shadow-xl w-full max-w-md">
+                <h2 class="text-2xl font-bold mb-2">Result</h2>
+                <div id="final-score" class="text-6xl font-black text-blue-600 mb-4">0%</div>
+                <p id="final-msg" class="text-gray-500 mb-8">Keep studying!</p>
+                <button onclick="closeSubScreen()" class="w-full py-3 bg-gray-100 rounded-lg font-bold mb-2">Done</button>
+                <button id="ai-guide-btn" class="gemini-feature w-full py-3 bg-purple-100 text-purple-700 rounded-lg font-bold">✨ Get AI Study Guide</button>
+            </div>
+        </div>
+        
+        <div id="ai-modal" class="fixed inset-0 bg-black/80 hidden z-[60] flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl p-6 h-[80vh] flex flex-col">
                 <div class="flex justify-between items-center mb-4">
-                    <span class="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded uppercase tracking-wide" id="quiz-subject">Subject</span>
-                    <div class="text-sm font-semibold text-muted"><span id="question-number">1</span> / <span id="total-questions">10</span></div>
+                    <h3 class="font-bold text-lg">AI Assistant</h3>
+                    <button onclick="document.getElementById('ai-modal').classList.add('hidden')" class="text-2xl">&times;</button>
                 </div>
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-6"><div id="progress-bar" class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div></div>
-                
-                <div class="card p-6 rounded-xl shadow-sm border border-custom mb-6">
-                    <div id="question-area" class="text-lg font-medium leading-relaxed"></div>
-                </div>
-
-                <div id="options-area" class="flex flex-col gap-3"></div>
-                
-                <div id="action-buttons" class="hidden mt-8 flex justify-between items-center animate-fade-in">
-                    <button id="cancel-btn" class="text-red-500 font-semibold px-4">Stop Quiz</button>
-                    <button id="continue-btn" class="bg-blue-600 text-white py-3 px-8 rounded-lg font-bold hover:bg-blue-700 shadow-lg transform active:scale-95 transition-all">Next Question ➜</button>
-                </div>
+                <div id="ai-content" class="flex-grow overflow-y-auto markdown-body p-2"></div>
             </div>
         </div>
 
-        <div id="results-container" class="sub-screen p-4 flex flex-col items-center justify-center text-center">
-             <div class="card w-full max-w-lg rounded-2xl shadow-xl p-8 border border-custom">
-                <div class="mb-4">
-                    <svg class="w-16 h-16 text-yellow-400 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                </div>
-                <h2 class="text-2xl font-bold mb-2">Quiz Complete!</h2>
-                <div class="text-5xl font-black text-blue-600 mb-2" id="final-score">0%</div>
-                <p id="score-text" class="text-muted mb-8">Good effort!</p>
-                
-                <div class="grid grid-cols-1 gap-3 w-full">
-                     <button id="review-answers-btn" class="bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-50">Review Answers</button>
-                    <button id="generate-study-guide-btn" class="gemini-feature bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 flex justify-center items-center gap-2">
-                        <span>✨ Generate Study Guide</span>
-                    </button>
-                    <button id="restart-btn" class="text-blue-600 font-semibold py-3 mt-2">Back to Dashboard</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="review-screen" class="sub-screen p-4">
-            <div class="max-w-3xl mx-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Answer Key</h2>
-                    <button id="review-back-btn" class="text-blue-600 font-semibold">Done</button>
-                </div>
-                <div id="review-content" class="space-y-6 pb-10"></div>
-            </div>
-        </div>
-
-        <div id="scenario-screen" class="sub-screen p-4">
-             <div class="max-w-2xl mx-auto flex flex-col h-full">
-                <div class="flex justify-between items-center mb-6 flex-shrink-0">
-                    <h2 class="text-xl font-bold flex items-center gap-2"><span class="text-2xl">⚡</span> Scenario Challenge</h2>
-                    <button id="scenario-back-btn" class="text-muted font-semibold hover:text-foreground">Close</button>
-                </div>
-                <div class="card p-6 rounded-xl shadow-md border border-custom flex-grow overflow-y-auto mb-4">
-                    <div id="scenario-content" class="markdown-body">
-                        <div class="text-center py-10">
-                            <p class="text-muted mb-4">Click below to generate a real-world fisheries problem.</p>
-                            <button id="generate-scenario-btn" class="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-purple-700">Generate Scenario</button>
-                        </div>
-                    </div>
-                </div>
-             </div>
-        </div>
-
-        <div id="intel-screen" class="sub-screen p-4">
-             <div class="max-w-2xl mx-auto flex flex-col h-full">
-                <div class="flex justify-between items-center mb-6 flex-shrink-0">
-                    <h2 class="text-xl font-bold flex items-center gap-2"><span class="text-2xl">📡</span> Fisheries Field Intel</h2>
-                    <button id="intel-back-btn" class="text-muted font-semibold hover:text-foreground">Close</button>
-                </div>
-                <div class="card p-6 rounded-xl shadow-md border border-custom flex-grow overflow-y-auto mb-4">
-                     <div id="intel-content" class="markdown-body">
-                        <div class="text-center py-10">
-                            <p class="text-muted mb-4">Get the latest trends, technologies, or updates in the industry.</p>
-                            <button id="generate-intel-btn" class="bg-teal-600 text-white px-6 py-3 rounded-lg font-bold shadow hover:bg-teal-700">Fetch Intel</button>
-                        </div>
-                    </div>
-                </div>
-             </div>
-        </div>
-        
-        <div id="study-guide-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60]">
-             <div class="card w-full max-w-2xl rounded-2xl shadow-2xl p-6 flex flex-col h-[80vh] relative">
-                <button id="close-guide-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 text-2xl">&times;</button>
-                <h2 class="text-2xl font-bold mb-4 text-purple-600">✨ AI Study Guide</h2>
-                <div id="study-guide-content" class="flex-grow overflow-y-auto markdown-body p-2 border border-custom rounded-lg bg-gray-50 dark:bg-slate-900">
-                    </div>
-             </div>
-        </div>
     </main>
-    
-    <nav class="fixed bottom-0 left-0 right-0 h-16 flex justify-around items-center z-40 border-t border-custom pb-safe">
-        <button data-screen="home-screen" class="nav-btn flex flex-col items-center justify-center text-muted active-nav w-full h-full">
-             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-        </button>
-        <button data-screen="subjects-screen" class="nav-btn flex flex-col items-center justify-center text-muted w-full h-full">
-             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-        </button>
-        <button data-screen="dashboard-screen" class="nav-btn flex flex-col items-center justify-center text-muted w-full h-full">
-             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-        </button>
-         <button data-screen="settings-screen" class="nav-btn flex flex-col items-center justify-center text-muted w-full h-full">
-             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        </button>
+
+    <nav class="fixed bottom-0 w-full h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 flex justify-around items-center z-40">
+        <button onclick="showScreen('home-screen')" class="nav-btn active-nav p-2"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg></button>
+        <button onclick="showScreen('subjects-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></button>
+        <button onclick="showScreen('dashboard-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg></button>
+        <button onclick="showScreen('settings-screen')" class="nav-btn p-2 text-gray-400"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></button>
     </nav>
-    
+
     <script>
-        // --- DATASET (Shortened for brevity, but functional structure) ---
-        // I have kept your full structure logic but abbreviated questions to save space.
-        // The logic accepts ANY amount of questions you add here.
-        const fullQuizData = {
-            "Aquaculture": {
-                description: "Hatchery, Nutrition, Health Mgt.",
-                image: "https://images.unsplash.com/photo-1585938389614-7c28c4654d6d?auto=format&fit=crop&w=200&q=80",
-                questions: [
-                    { question: "What is the recommended slope for a clay soil dike?", options: ["1:1", "2:1", "1:2", "1:4"], answer: "2:1" },
-                    { question: "Calculate FCR: 1500kg feed / 1200kg fish.", options: ["0.8", "1.25", "1.5", "1.2"], answer: "1.25" },
-                    { question: "Primary toxic metabolite in RAS?", options: ["Nitrate", "Ammonia", "Nitrite", "CO2"], answer: "Ammonia" },
-                    { question: "Organism for Green Water Tech?", options: ["Chlorella", "Tilapia", "Milkfish", "Carp"], answer: "Chlorella" },
-                    { question: "Cause of White Spot in freshwater fish?", options: ["Virus", "Bacterium", "Protozoan", "Fungus"], answer: "Protozoan" }
-                ]
-            },
-            "Capture Fisheries": {
-                description: "Gear Design, Laws, Seamanship.",
-                image: "https://images.unsplash.com/photo-1579290240428-239b0a1a8c04?auto=format&fit=crop&w=200&q=80",
-                questions: [
-                    { question: "Which is an Active Gear?", options: ["Gill net", "Fish pot", "Trawl", "Longline"], answer: "Trawl" },
-                    { question: "Municipal waters distance?", options: ["7km", "10km", "15km", "20km"], answer: "15km" },
-                    { question: "Starboard refers to?", options: ["Left", "Right", "Rear", "Front"], answer: "Right" },
-                    { question: "Closes the bottom of a purse seine?", options: ["Float line", "Lead line", "Purse line", "Bunt"], answer: "Purse line" }
-                ]
-            },
-            "Ecology & Resources": {
-                description: "Limnology, Oceanography, Biology.",
-                image: "https://images.unsplash.com/photo-1551843073-4a9a7a6f9de7?auto=format&fit=crop&w=200&q=80",
-                questions: [
-                    { question: "Sharp density gradient in water?", options: ["Halocline", "Thermocline", "Pycnocline", "Chemocline"], answer: "Pycnocline" },
-                    { question: "Cause of Paralytic Shellfish Poisoning?", options: ["Sargassum", "Pyrodinium", "Caulerpa", "Kappaphycus"], answer: "Pyrodinium" },
-                    { question: "Mangrove aerial roots?", options: ["Pneumatophores", "Prop roots", "Buttress", "Stilt"], answer: "Pneumatophores" }
-                ]
-            },
-            "Post-Harvest": {
-                description: "Processing, HACCP, Micro.",
-                image: "https://images.unsplash.com/photo-1597799279436-94233ac3c7a8?auto=format&fit=crop&w=200&q=80",
-                questions: [
-                    { question: "Primary concern in canned products?", options: ["Salmonella", "E. coli", "C. botulinum", "Vibrio"], answer: "C. botulinum" },
-                    { question: "Stiffening of fish muscle after death?", options: ["Autolysis", "Rigor Mortis", "Putrefaction", "Oxidation"], answer: "Rigor Mortis" },
-                    { question: "Histamine poisoning fish family?", options: ["Scombridae", "Cichlidae", "Cyprinidae", "Serranidae"], answer: "Scombridae" }
-                ]
-            }
-        };
+        // --- APP LOGIC ---
+        // NOTICE: 'quizData' is no longer here. It is loaded from questions.js
 
-        // --- APP STATE ---
-        let geminiApiKey = localStorage.getItem('geminiApiKey');
-        let performanceData = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {};
-        const headerTitle = document.getElementById('header-title');
-        
-        // Quiz State
-        let currentSubject = '';
-        let currentQuestions = [];
-        let questionIndex = 0;
+        let currentQuiz = [];
+        let qIndex = 0;
         let score = 0;
-        let reviewData = [];
-        let answerSelected = false;
+        let activeSubject = "";
+        let geminiKey = localStorage.getItem('geminiKey');
 
-        // --- INITIALIZATION ---
+        // Init
         document.addEventListener('DOMContentLoaded', () => {
-            if (!localStorage.getItem('hasOnboarded')) {
-                document.getElementById('onboarding-modal').classList.remove('hidden');
-            }
-            initializeTheme();
-            renderSubjects();
-            updateGeminiFeatureStates();
-            updateDashboardData(); // Load initial stats
-            setupEventListeners();
+            if(localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
+            loadSubjects();
+            updateDashboard();
+            checkKey();
         });
 
-        // --- GEMINI AI INTEGRATION ---
-        async function callGemini(prompt) {
-            if (!geminiApiKey) return "Error: No API Key found. Please add one in Settings.";
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }]
-            };
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-                return data.candidates[0].content.parts[0].text;
-            } catch (error) {
-                console.error("AI Error:", error);
-                return "Sorry, I couldn't connect to the AI. Please check your internet or API Key.";
-            }
-        }
-
-        async function generateScenario() {
-            const contentDiv = document.getElementById('scenario-content');
-            contentDiv.innerHTML = '<div class="loader"></div><p class="text-center text-muted">Generating challenge...</p>';
-            
-            const prompt = "Act as a Licensed Fisheries Technologist. Create a short, difficult, practical scenario question (approx 50 words) relevant to Philippine fisheries (aquaculture or capture). Ask the user 'What would you do?'. Do NOT give the answer yet.";
-            
-            const text = await callGemini(prompt);
-            
-            // Render Question + 'Show Answer' button
-            contentDiv.innerHTML = `
-                <div class="prose dark:prose-invert">
-                    ${marked.parse(text)}
-                </div>
-                <button id="solve-scenario-btn" class="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Reveal Expert Solution</button>
-            `;
-            
-            // Attach listener to new button
-            document.getElementById('solve-scenario-btn').addEventListener('click', async () => {
-                const btn = document.getElementById('solve-scenario-btn');
-                btn.disabled = true;
-                btn.textContent = "Analyzing...";
-                
-                const answerPrompt = `Regarding this scenario: "${text}". Provide the correct technical solution and explanation in 2-3 sentences.`;
-                const answer = await callGemini(answerPrompt);
-                
-                const answerDiv = document.createElement('div');
-                answerDiv.className = "mt-4 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 rounded-lg animate-fade-in";
-                answerDiv.innerHTML = `<h4 class="font-bold text-green-700 dark:text-green-400">Expert Solution:</h4>${marked.parse(answer)}`;
-                contentDiv.appendChild(answerDiv);
-                btn.classList.add('hidden');
-            });
-        }
-
-        async function generateFieldIntel() {
-            const contentDiv = document.getElementById('intel-content');
-            contentDiv.innerHTML = '<div class="loader"></div><p class="text-center text-muted">Scanning industry updates...</p>';
-            
-            const prompt = "Summarize 3 distinct, recent, and important trends or technologies in the Global or Philippine Fisheries industry. Format as a bulleted list with bold titles.";
-            
-            const text = await callGemini(prompt);
-            contentDiv.innerHTML = marked.parse(text) + '<button id="generate-intel-btn" class="mt-8 bg-teal-600 text-white px-6 py-2 rounded-lg font-bold shadow text-sm w-full">Refresh Intel</button>';
-            
-            // Re-attach listener since we wiped the innerHTML
-            document.getElementById('generate-intel-btn').addEventListener('click', generateFieldIntel);
-        }
-
-        async function generateStudyGuide() {
-            const modal = document.getElementById('study-guide-modal');
-            const contentDiv = document.getElementById('study-guide-content');
-            
-            modal.classList.remove('hidden');
-            contentDiv.innerHTML = '<div class="loader"></div><p class="text-center text-muted">Analyzing your performance...</p>';
-            
-            // Context from current quiz
-            const weakAreas = reviewData.filter(r => r.selected !== r.question.answer).map(r => r.question.question);
-            let prompt = "";
-            
-            if (weakAreas.length > 0) {
-                prompt = `The student just took a quiz on ${currentSubject} and missed questions related to: ${weakAreas.slice(0,3).join(', ')}. Create a concise bullet-point study guide (max 150 words) to help them understand these specific concepts better.`;
-            } else {
-                prompt = `The student got a perfect score on a ${currentSubject} quiz. Give them 3 advanced, "nice-to-know" trivia facts about this topic to challenge them further.`;
-            }
-
-            const text = await callGemini(prompt);
-            contentDiv.innerHTML = marked.parse(text);
-        }
-
-        // --- CORE FUNCTIONS ---
-
-        function setupOnboarding() {
-            const modal = document.getElementById('onboarding-modal');
-            const nextBtn = document.getElementById('onboarding-next');
-            const skipBtn = document.getElementById('onboarding-skip');
-            const slides = document.getElementById('onboarding-slides');
-            const dots = document.getElementById('onboarding-dots');
-            let slideIndex = 0;
-            const totalSlides = 3;
-
-            // Init Dots
-            for(let i=0; i<totalSlides; i++) {
-                const d = document.createElement('div');
-                d.className = `w-2 h-2 rounded-full transition-colors ${i===0 ? 'bg-blue-600' : 'bg-gray-300'}`;
-                dots.appendChild(d);
-            }
-
-            function updateSlide() {
-                slides.style.transform = `translateX(-${slideIndex * 100}%)`;
-                Array.from(dots.children).forEach((d,i) => d.className = `w-2 h-2 rounded-full transition-colors ${i===slideIndex ? 'bg-blue-600' : 'bg-gray-300'}`);
-                nextBtn.textContent = slideIndex === totalSlides - 1 ? "Finish" : "Next";
-            }
-
-            nextBtn.addEventListener('click', () => {
-                if (slideIndex < totalSlides - 1) {
-                    slideIndex++;
-                    updateSlide();
-                } else {
-                    const key = document.getElementById('onboarding-api-key-input').value.trim();
-                    if(key) {
-                        localStorage.setItem('geminiApiKey', key);
-                        geminiApiKey = key;
-                        updateGeminiFeatureStates();
-                    }
-                    localStorage.setItem('hasOnboarded', 'true');
-                    modal.classList.add('hidden');
-                }
-            });
-
-            skipBtn.addEventListener('click', () => {
-                localStorage.setItem('hasOnboarded', 'true');
-                modal.classList.add('hidden');
-            });
-        }
-
-        function renderSubjects() {
-            const container = document.getElementById('subject-list-container');
-            container.innerHTML = '';
-            for (const [key, data] of Object.entries(fullQuizData)) {
-                const div = document.createElement('div');
-                div.className = 'card p-4 rounded-xl shadow-sm border border-custom flex items-center gap-4 cursor-pointer card-hover';
-                div.innerHTML = `
-                    <div class="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
-                        <img src="${data.image}" class="w-full h-full object-cover">
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg">${key}</h3>
-                        <p class="text-xs text-muted">${data.description}</p>
-                    </div>
-                `;
-                div.onclick = () => {
-                    document.getElementById('item-select-subject').textContent = key;
-                    showSubScreen('item-selection-screen');
-                }
-                container.appendChild(div);
-            }
-        }
-
-        function startQuiz(subject, count) {
-            currentSubject = subject;
-            let pool = [];
-            
-            if (subject === "Mock Board Exam") {
-                Object.values(fullQuizData).forEach(s => pool.push(...s.questions));
-            } else {
-                pool = fullQuizData[subject].questions;
-            }
-            
-            // Shuffle and slice
-            currentQuestions = pool.sort(() => 0.5 - Math.random()).slice(0, count);
-            questionIndex = 0;
-            score = 0;
-            reviewData = [];
-            
-            // UI Setup
-            document.getElementById('quiz-subject').textContent = subject;
-            document.getElementById('total-questions').textContent = currentQuestions.length;
-            showSubScreen('quiz-container');
-            loadQuestion();
-        }
-
-        function loadQuestion() {
-            if (questionIndex >= currentQuestions.length) {
-                finishQuiz();
-                return;
-            }
-            
-            const q = currentQuestions[questionIndex];
-            answerSelected = false;
-            
-            // Update Progress
-            document.getElementById('question-number').textContent = questionIndex + 1;
-            document.getElementById('progress-bar').style.width = `${((questionIndex) / currentQuestions.length) * 100}%`;
-            
-            // Render Text
-            document.getElementById('question-area').textContent = q.question;
-            document.getElementById('action-buttons').classList.add('hidden');
-            
-            const optsDiv = document.getElementById('options-area');
-            optsDiv.innerHTML = '';
-            
-            q.options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = "w-full text-left p-4 card rounded-xl border border-custom hover:border-blue-500 transition-all font-medium text-sm";
-                btn.textContent = opt;
-                btn.onclick = () => checkAnswer(btn, opt, q);
-                optsDiv.appendChild(btn);
-            });
-        }
-
-        function checkAnswer(btn, selected, q) {
-            if (answerSelected) return;
-            answerSelected = true;
-            
-            const isCorrect = selected === q.answer;
-            if (isCorrect) score++;
-            
-            reviewData.push({ question: q, selected: selected });
-            
-            // Visual Feedback
-            Array.from(document.getElementById('options-area').children).forEach(b => {
-                b.disabled = true;
-                if (b.textContent === q.answer) b.classList.add('bg-green-100', 'border-green-500', 'text-green-800', 'dark:bg-green-900', 'dark:text-green-100');
-            });
-            
-            if (!isCorrect) {
-                btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'dark:bg-red-900', 'dark:text-red-100');
-            }
-            
-            document.getElementById('action-buttons').classList.remove('hidden');
-        }
-
-        function finishQuiz() {
-            const percentage = Math.round((score / currentQuestions.length) * 100);
-            
-            // Save Data
-            if (!performanceData[currentSubject]) performanceData[currentSubject] = { scores: [] };
-            performanceData[currentSubject].scores.push(percentage);
-            localStorage.setItem('fisheriesPerformance', JSON.stringify(performanceData));
-            updateDashboardData();
-
-            // Render Result
-            document.getElementById('final-score').textContent = `${percentage}%`;
-            document.getElementById('score-text').textContent = percentage >= 75 ? "Excellent work! You passed." : "Keep studying, you can do this!";
-            showSubScreen('results-container');
-        }
-
-        // --- DASHBOARD & UTILS ---
-        function updateDashboardData() {
-            let total = 0, count = 0;
-            const chart = document.getElementById('score-chart');
-            const details = document.getElementById('subject-details');
-            chart.innerHTML = ''; details.innerHTML = '';
-            
-            Object.entries(performanceData).forEach(([subj, data]) => {
-                if (data.scores.length === 0) return;
-                const avg = Math.round(data.scores.reduce((a,b)=>a+b,0) / data.scores.length);
-                total += avg; count++;
-                
-                // Chart Bar
-                chart.innerHTML += `
-                    <div class="flex-1 flex flex-col items-center justify-end h-full group">
-                        <div class="text-xs font-bold mb-1 opacity-0 group-hover:opacity-100 transition-opacity">${avg}%</div>
-                        <div class="w-full max-w-[40px] bg-blue-500 rounded-t-md hover:bg-blue-400 transition-all" style="height: ${avg}%"></div>
-                    </div>`;
-                
-                // Detail Item
-                details.innerHTML += `
-                    <div class="flex justify-between items-center p-3 border-b border-custom">
-                        <span class="font-medium">${subj}</span>
-                        <span class="font-bold text-blue-600">${avg}%</span>
-                    </div>`;
-            });
-            
-            const overall = count > 0 ? Math.round(total / count) : 0;
-            document.getElementById('home-overall-average').textContent = `${overall}%`;
-            document.getElementById('home-quizzes-taken').textContent = Object.values(performanceData).reduce((acc, curr) => acc + curr.scores.length, 0);
+        function setTheme(t) {
+            localStorage.setItem('theme', t);
+            if(t==='dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
         }
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
-            
-            const titles = {'home-screen':'Home', 'subjects-screen':'Select Quiz', 'dashboard-screen':'My Stats', 'settings-screen':'Settings'};
-            headerTitle.textContent = titles[id];
-            
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('active-nav', 'text-blue-600');
-                if (b.dataset.screen === id) b.classList.add('active-nav', 'text-blue-600');
-            });
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-blue-600', 'text-gray-400'));
+            // simple nav highlight logic
+            if(id.includes('home')) document.querySelector('nav button:nth-child(1)').classList.replace('text-gray-400', 'text-blue-600');
+            if(id.includes('subject')) document.querySelector('nav button:nth-child(2)').classList.replace('text-gray-400', 'text-blue-600');
+            if(id.includes('dashboard')) document.querySelector('nav button:nth-child(3)').classList.replace('text-gray-400', 'text-blue-600');
+            if(id.includes('settings')) document.querySelector('nav button:nth-child(4)').classList.replace('text-gray-400', 'text-blue-600');
         }
 
-        function showSubScreen(id) {
-            document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
-            if (id) document.getElementById(id).classList.add('active');
-        }
-
-        function updateGeminiFeatureStates() {
-            const hasKey = !!geminiApiKey;
-            document.querySelectorAll('.gemini-feature').forEach(el => {
-                if (!hasKey) {
-                    el.classList.add('disabled-card');
-                    el.title = "Add API Key in Settings to unlock";
-                } else {
-                    el.classList.remove('disabled-card');
-                    el.title = "";
-                }
-            });
-            
-            const status = document.getElementById('api-key-status');
-            if (hasKey) {
-                status.textContent = "✅ Active";
-                status.className = "text-xs mb-4 text-center h-4 text-green-600 font-bold";
-                document.getElementById('api-key-input').value = geminiApiKey;
+        function loadSubjects() {
+            const list = document.getElementById('subject-list');
+            list.innerHTML = '';
+            // Ensure quizData exists (loaded from questions.js)
+            if (typeof quizData !== 'undefined') {
+                Object.keys(quizData).forEach(sub => {
+                    const btn = document.createElement('button');
+                    btn.className = "w-full text-left p-4 card rounded-xl font-bold shadow-sm hover:border-blue-500 transition";
+                    btn.innerHTML = `<span class="text-xl mr-2">🐟</span> ${sub}`;
+                    btn.onclick = () => openSetup(sub);
+                    list.appendChild(btn);
+                });
             } else {
-                status.textContent = "❌ Not Set";
-                status.className = "text-xs mb-4 text-center h-4 text-red-500 font-bold";
+                list.innerHTML = "<p class='text-red-500'>Error: Questions file not loaded.</p>";
             }
         }
 
-        function initializeTheme() {
-            const theme = localStorage.getItem('theme') || 'light';
-            if (theme === 'dark') document.documentElement.classList.add('dark');
+        function openSetup(sub) {
+            activeSubject = sub;
+            document.getElementById('setup-subject').textContent = sub;
+            document.getElementById('setup-screen').classList.add('active');
+        }
+        function closeSubScreen() {
+            document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
+        }
+
+        function startQuiz(count) {
+            let pool = [];
+            if (activeSubject === "Mock Exam") {
+                Object.values(quizData).forEach(arr => pool.push(...arr));
+            } else {
+                pool = quizData[activeSubject];
+            }
+
+            // Shuffle
+            pool = pool.sort(() => 0.5 - Math.random());
             
-            document.querySelectorAll('.theme-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const t = btn.dataset.theme;
-                    localStorage.setItem('theme', t);
-                    if (t === 'dark') document.documentElement.classList.add('dark');
-                    else document.documentElement.classList.remove('dark');
+            // Limit to available count to prevent crash
+            const actualCount = Math.min(count, pool.length);
+            currentQuiz = pool.slice(0, actualCount);
+            
+            qIndex = 0; score = 0;
+            document.getElementById('q-total').textContent = currentQuiz.length;
+            document.getElementById('quiz-lbl').textContent = activeSubject;
+            
+            closeSubScreen();
+            document.getElementById('quiz-screen').classList.add('active');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = currentQuiz[qIndex];
+            document.getElementById('q-curr').textContent = qIndex + 1;
+            document.getElementById('progress').style.width = `${((qIndex)/currentQuiz.length)*100}%`;
+            document.getElementById('q-text').textContent = q.q;
+            document.getElementById('quiz-controls').classList.add('hidden');
+            
+            const opts = document.getElementById('options');
+            opts.innerHTML = '';
+            q.opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 card rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition";
+                btn.textContent = opt;
+                btn.onclick = () => checkAnswer(btn, opt, q.a);
+                opts.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btn, sel, corr) {
+            if(document.getElementById('quiz-controls').classList.contains('flex')) return; // prevent double click
+            
+            if (sel === corr) {
+                score++;
+                btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
+            } else {
+                btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
+                // show correct
+                Array.from(document.getElementById('options').children).forEach(b => {
+                    if(b.textContent === corr) b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
                 });
+            }
+            document.getElementById('quiz-controls').classList.remove('hidden');
+            document.getElementById('quiz-controls').className = "mt-8 flex justify-between animate-fade-in";
+        }
+
+        function nextQuestion() {
+            qIndex++;
+            if(qIndex < currentQuiz.length) loadQuestion();
+            else finishQuiz();
+        }
+
+        function finishQuiz() {
+            const pct = Math.round((score / currentQuiz.length) * 100);
+            
+            // Save Stats
+            let stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[]};
+            stats.totalQ += currentQuiz.length;
+            stats.scores.push(pct);
+            localStorage.setItem('fisheriesPerformance', JSON.stringify(stats));
+            updateDashboard();
+
+            document.getElementById('final-score').textContent = pct + "%";
+            document.getElementById('final-msg').textContent = pct > 75 ? "Excellent! You are ready." : "Keep reviewing.";
+            
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+        }
+
+        function updateDashboard() {
+            const stats = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {totalQ:0, scores:[]};
+            document.getElementById('home-count').textContent = stats.scores.length;
+            const avg = stats.scores.length ? Math.round(stats.scores.reduce((a,b)=>a+b,0)/stats.scores.length) : 0;
+            document.getElementById('home-avg').textContent = avg + "%";
+            
+            const cont = document.getElementById('stats-container');
+            cont.innerHTML = '';
+            stats.scores.slice(-5).reverse().forEach((s, i) => {
+                cont.innerHTML += `<div class="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800"><span>Attempt ${stats.scores.length - i}</span><span class="font-bold ${s>=75?'text-green-500':'text-orange-500'}">${s}%</span></div>`;
             });
         }
 
-        function setupEventListeners() {
-            // Navigation
-            document.querySelectorAll('.nav-btn').forEach(b => b.onclick = () => showScreen(b.dataset.screen));
-            
-            // Settings
-            document.getElementById('save-api-key-btn').onclick = () => {
-                const k = document.getElementById('api-key-input').value.trim();
-                if (k) { localStorage.setItem('geminiApiKey', k); geminiApiKey = k; }
-                updateGeminiFeatureStates();
-            };
-            document.getElementById('remove-api-key-btn').onclick = () => {
-                localStorage.removeItem('geminiApiKey'); geminiApiKey = null;
-                document.getElementById('api-key-input').value = '';
-                updateGeminiFeatureStates();
-            };
-
-            // Quiz Flow
-            document.querySelectorAll('.item-select-btn').forEach(b => {
-                b.onclick = () => startQuiz(document.getElementById('item-select-subject').textContent, parseInt(b.dataset.items));
+        // --- GEMINI AI ---
+        function checkKey() {
+            const has = !!geminiKey;
+            document.getElementById('key-status').textContent = has ? "✅ Key Saved" : "❌ No Key Set";
+            document.querySelectorAll('.gemini-feature').forEach(e => {
+                if(!has) e.classList.add('disabled-card');
+                else e.classList.remove('disabled-card');
             });
-            document.getElementById('continue-btn').onclick = () => { questionIndex++; loadQuestion(); };
-            document.getElementById('cancel-btn').onclick = finishQuiz;
-            document.getElementById('back-to-subjects-btn').onclick = () => showSubScreen(null);
-            document.getElementById('restart-btn').onclick = () => { showSubScreen(null); showScreen('dashboard-screen'); };
-            
-            // Review
-            document.getElementById('review-answers-btn').onclick = () => {
-                const div = document.getElementById('review-content');
-                div.innerHTML = reviewData.map((d, i) => `
-                    <div class="p-4 border border-custom rounded-lg bg-card">
-                        <p class="font-bold text-sm mb-2">${i+1}. ${d.question.question}</p>
-                        <p class="text-xs text-red-500">You: ${d.selected}</p>
-                        <p class="text-xs text-green-600 font-bold">Correct: ${d.question.answer}</p>
-                    </div>`).join('');
-                showSubScreen('review-screen');
-            };
-            document.getElementById('review-back-btn').onclick = () => showSubScreen('results-container');
-            
-            // Mock Exam
-            document.getElementById('mock-exam-card').onclick = () => {
-                document.getElementById('item-select-subject').textContent = "Mock Board Exam";
-                showSubScreen('item-selection-screen');
-            };
-
-            // AI Features
-            document.getElementById('scenario-challenge-card').onclick = (e) => {
-                if(!e.currentTarget.classList.contains('disabled-card')) showSubScreen('scenario-screen');
-            };
-            document.getElementById('generate-scenario-btn').onclick = generateScenario;
-            document.getElementById('scenario-back-btn').onclick = () => showSubScreen(null);
-
-            document.getElementById('field-intel-card').onclick = (e) => {
-                if(!e.currentTarget.classList.contains('disabled-card')) showSubScreen('intel-screen');
-            };
-            document.getElementById('generate-intel-btn').onclick = generateFieldIntel;
-            document.getElementById('intel-back-btn').onclick = () => showSubScreen(null);
-            
-            document.getElementById('generate-study-guide-btn').onclick = (e) => {
-                if(!e.currentTarget.classList.contains('disabled-card')) generateStudyGuide();
-            };
-            document.getElementById('close-guide-btn').onclick = () => document.getElementById('study-guide-modal').classList.add('hidden');
-            
-            // Onboarding
-            setupOnboarding();
+            if(has) document.getElementById('api-key').value = geminiKey;
         }
+
+        document.getElementById('save-key').onclick = () => {
+            const k = document.getElementById('api-key').value.trim();
+            if(k) { localStorage.setItem('geminiKey', k); geminiKey = k; checkKey(); }
+        };
+
+        async function askGemini(prompt) {
+            if(!geminiKey) return;
+            const modal = document.getElementById('ai-modal');
+            const box = document.getElementById('ai-content');
+            modal.classList.remove('hidden');
+            box.innerHTML = '<div class="loader"></div>';
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                box.innerHTML = marked.parse(text);
+            } catch(e) {
+                box.innerHTML = "Error connecting to AI.";
+            }
+        }
+
+        document.getElementById('ai-scenario-btn').onclick = () => askGemini("Create a difficult, practical scenario question for a fisheries technologist. Ask 'What would you do?'.");
+        document.getElementById('ai-intel-btn').onclick = () => askGemini("Summarize 3 recent trends in global or Philippine fisheries.");
+        document.getElementById('ai-guide-btn').onclick = () => askGemini(`I just scored ${document.getElementById('final-score').textContent} on a ${activeSubject} quiz. Give me 3 bullet points of study tips.`);
+        document.getElementById('mock-exam-btn').onclick = () => { openSetup('Mock Exam'); };
+
     </script>
 </body>
 </html>
