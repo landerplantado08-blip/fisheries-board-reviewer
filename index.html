@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phil. Fisheries Technologist Reviewer</title>
+    <style>
+        :root {
+            --primary-color: #006994; /* Ocean Blue */
+            --secondary-color: #004e70;
+            --accent-color: #ff9800;
+            --light-bg: #f0f8ff;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        h1 { margin: 0; font-size: 1.2rem; }
+        h2 { margin: 0; font-size: 1.5rem; }
+
+        /* Screens */
+        .screen {
+            padding: 1.5rem;
+            flex: 1;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Start Screen */
+        .menu-btn {
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: left;
+            width: 100%;
+        }
+
+        .menu-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .primary-btn {
+            background-color: var(--accent-color);
+            border: none;
+            color: white;
+            border-color: var(--accent-color);
+            text-align: center;
+        }
+        
+        .primary-btn:hover {
+            background-color: #e68900;
+        }
+
+        /* Quiz Interface */
+        .progress-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .category-tag {
+            background-color: #e3f2fd;
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: #f5f5f5;
+            border-color: var(--primary-color);
+        }
+
+        .option-btn.correct {
+            background-color: #e8f5e9;
+            border-color: var(--success-color);
+            color: #2e7d32;
+        }
+
+        .option-btn.wrong {
+            background-color: #ffebee;
+            border-color: var(--error-color);
+            color: #c62828;
+        }
+
+        .rationale-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff8e1;
+            border-left: 4px solid var(--accent-color);
+            border-radius: 4px;
+            display: none; /* Hidden until answered */
+            animation: fadeIn 0.5s;
+        }
+
+        .rationale-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #ef6c00;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .next-btn {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Results Screen */
+        .score-display {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        
+        .score-label {
+            font-size: 1rem;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 600px) {
+            .container {
+                margin: 20px auto;
+                border-radius: 10px;
+                min-height: auto;
+                height: 90vh;
+                overflow: hidden;
+            }
+            .screen {
+                overflow-y: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>PRC Fisheries Technologist</h1>
+        <h2>Reviewer App</h2>
+    </header>
+
+    <div id="start-screen" class="screen active">
+        <p style="text-align: center; margin-bottom: 2rem;">Select a review mode based on the Table of Specifications:</p>
+        
+        <button class="menu-btn" onclick="startQuiz('all')">📚 Take Full Mock Exam (Randomized)</button>
+        <button class="menu-btn" onclick="startQuiz('Aquaculture')">🐟 Aquaculture</button>
+        <button class="menu-btn" onclick="startQuiz('Capture Fisheries')">⚓ Capture Fisheries</button>
+        <button class="menu-btn" onclick="startQuiz('Aquatic Resources & Ecology')">🌊 Aquatic Resources & Ecology</button>
+        <button class="menu-btn" onclick="startQuiz('Post-Harvest Fisheries')">🥫 Post-Harvest Fisheries</button>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        
+        <span class="category-tag" id="q-category">Category</span>
+        <div class="question-text" id="q-text">Question goes here...</div>
+        
+        <div class="options-grid" id="options-container">
+            </div>
+
+        <div class="rationale-box" id="rationale-display">
+            <span class="rationale-title">💡 Rationale</span>
+            <span id="rationale-text">Explanation text...</span>
+        </div>
+
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Next Question</button>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h2 style="text-align: center;">Exam Completed!</h2>
+        
+        <div class="score-display">
+            <div class="score-circle">
+                <span id="final-score">0</span>
+                <span class="score-label">out of <span id="total-questions">0</span></span>
+            </div>
+        </div>
+
+        <p style="text-align: center;" id="feedback-msg">Good job!</p>
+
+        <button class="menu-btn primary-btn" onclick="showStartScreen()">Return to Home</button>
+    </div>
+</div>
+
+<script>
+    // --- DATASET ---
+    const questionBank = [
+        { id: 1, category: "Aquaculture", question: "In the design of an aquaculture pond, what is the recommended slope for the dike to ensure structural stability and prevent erosion?", options: ["1:1", "2:1", "1:2", "1:4"], correctAnswer: 1, rationale: "A slope of 2:1 (horizontal to vertical) is generally recommended for clay soil dikes to ensure stability and minimize erosion. Sandy soils may require 3:1." },
+        { id: 2, category: "Aquaculture", question: "Calculate the Feed Conversion Ratio (FCR) if a tilapia pond consumed 1,500 kg of feed and produced a total harvest of 1,200 kg of fish.", options: ["0.8", "1.2", "1.25", "1.5"], correctAnswer: 2, rationale: "FCR = Total Feed Given / Total Weight Gain. 1,500 / 1,200 = 1.25. A lower FCR indicates better feed efficiency." },
+        { id: 3, category: "Aquaculture", question: "Which live feed organism is most critical for the first feeding stage of grouper (Lapu-lapu) larvae due to their small mouth size?", options: ["Artemia nauplii", "Moina macrocopa", "SS-strain Rotifers", "Copepods"], correctAnswer: 2, rationale: "Grouper larvae have very small mouth gapes at first feeding. SS-strain (Super Small) Rotifers (Brachionus rotundiformis) are required before transitioning to Artemia." },
+        { id: 4, category: "Aquaculture", question: "What is the primary toxic metabolite produced by fish excretion that must be managed in a Recirculating Aquaculture System (RAS)?", options: ["Nitrate", "Ammonia", "Nitrite", "Carbon Dioxide"], correctAnswer: 1, rationale: "Un-ionized Ammonia (NH3) is the primary excretion product and is highly toxic. Biological filters convert it to Nitrite (NO2) and then Nitrate (NO3)." },
+        { id: 5, category: "Aquaculture", question: "In shrimp farming, the 'Green Water Technology' utilizes which organism to control Vibrio populations?", options: ["Chlorella", "Tilapia", "Milkfish", "Carp"], correctAnswer: 1, rationale: "Green water technology often co-cultures Tilapia in reservoirs or pens. The tilapia mucus and grazing activity help promote beneficial algae (Chlorella) and suppress luminous Vibrio bacteria." },
+        { id: 6, category: "Capture Fisheries", question: "Which of the following is classified as an 'Active Gear'?", options: ["Gill net", "Fish pot", "Trawl", "Longline"], correctAnswer: 2, rationale: "A Trawl is an active gear because it is towed through the water to catch fish. Gill nets, pots, and longlines are passive gears that wait for fish to encounter them." },
+        { id: 7, category: "Capture Fisheries", question: "Under RA 10654 (The Amended Philippine Fisheries Code), what is the delineation of 'Municipal Waters' from the shoreline?", options: ["7 kilometers", "10 kilometers", "15 kilometers", "20 kilometers"], correctAnswer: 2, rationale: "Municipal waters extend 15 kilometers from the shoreline, granting jurisdiction to the LGU, primarily for marginal fishermen." },
+        { id: 8, category: "Capture Fisheries", question: "In net construction, what happens if the hanging ratio (E) is set to 0.71 (or 70.7%)?", options: ["The mesh is fully stretched vertically", "The mesh is fully closed", "The mesh is a perfect square", "The mesh is fully stretched horizontally"], correctAnswer: 2, rationale: "A hanging ratio (E) of 0.707 creates a perfect square mesh opening, which maximizes the area of the mesh." },
+        { id: 9, category: "Capture Fisheries", question: "What does the nautical term 'Starboard' refer to?", options: ["The left side of the vessel", "The right side of the vessel", "The rear of the vessel", "The front of the vessel"], correctAnswer: 1, rationale: "Starboard is the right side of the vessel when facing forward. Port is the left side." },
+        { id: 10, category: "Capture Fisheries", question: "Which purse seine component is responsible for closing the bottom of the net to trap the school of fish?", options: ["Float line", "Lead line", "Purse line", "Bunt"], correctAnswer: 2, rationale: "The Purse Line passes through rings at the bottom of the net. When pulled, it 'purses' or closes the bottom, preventing fish from escaping downwards." },
+        { id: 11, category: "Aquatic Resources & Ecology", question: "The sharp density gradient in a body of water that separates the warm upper layer from the cold deeper layer is called:", options: ["Halocline", "Thermocline", "Pycnocline", "Chemocline"], correctAnswer: 1, rationale: "Thermocline refers specifically to the temperature gradient. Halocline is salinity, and Pycnocline is overall density." },
+        { id: 12, category: "Aquatic Resources & Ecology", question: "Which phenomenon, associated with ENSO, typically results in warmer sea surface temperatures and increased rainfall in the Eastern Pacific, but drought in the Philippines?", options: ["La Niña", "El Niño", "Monsoon", "Upwelling"], correctAnswer: 1, rationale: "El Niño causes the warming of the central/eastern Pacific, often leading to drought conditions in the Western Pacific (Philippines)." },
+        { id: 13, category: "Aquatic Resources & Ecology", question: "What is the causative organism of 'Paralytic Shellfish Poisoning' (Red Tide) commonly found in the Philippines?", options: ["Sargassum", "Pyrodinium bahamense", "Caulerpa lentillifera", "Kappaphycus alvarezii"], correctAnswer: 1, rationale: "Pyrodinium bahamense var. compressum is the primary dinoflagellate responsible for toxic Red Tides and PSP in the Philippines." },
+        { id: 14, category: "Aquatic Resources & Ecology", question: "Mangroves produce specialized aerial roots called pneumatophores for what primary purpose?", options: ["Structural support", "Salt excretion", "Gas exchange", "Nutrient absorption"], correctAnswer: 2, rationale: "Pneumatophores (like in Avicennia spp.) stick out of the anoxic mud to facilitate gas exchange (breathing) for the root system." },
+        { id: 15, category: "Aquatic Resources & Ecology", question: "In the marine food web, what trophic level do phytoplankton occupy?", options: ["Primary Producers", "Primary Consumers", "Secondary Consumers", "Decomposers"], correctAnswer: 0, rationale: "Phytoplankton are autotrophs that photosynthesize, making them Primary Producers at the base of the marine food web." },
+        { id: 16, category: "Post-Harvest Fisheries", question: "Which bacterium is the primary concern in canned fishery products due to its ability to produce a lethal neurotoxin under anaerobic conditions?", options: ["Salmonella", "Escherichia coli", "Clostridium botulinum", "Vibrio cholerae"], correctAnswer: 2, rationale: "Clostridium botulinum forms spores that survive improper canning. It thrives in anaerobic (airless) environments and produces the deadly botulinum toxin." },
+        { id: 17, category: "Post-Harvest Fisheries", question: "What is the biochemical change in fish muscle after death characterized by stiffening due to the depletion of ATP?", options: ["Autolysis", "Rigor Mortis", "Putrefaction", "Oxidation"], correctAnswer: 1, rationale: "Rigor Mortis is the stiffening of muscles after death. Delaying the onset and duration of rigor mortis through chilling is key to high quality." },
+        { id: 18, category: "Post-Harvest Fisheries", question: "Which principle of HACCP involves establishing limits (e.g., minimum temperature) to ensure a CCP is under control?", options: ["Hazard Analysis", "Critical Control Points", "Critical Limits", "Verification"], correctAnswer: 2, rationale: "Establishing Critical Limits (Principle 3) sets the specific criteria (values) that separates safe from unsafe product at a CCP." },
+        { id: 19, category: "Post-Harvest Fisheries", question: "Surimi processing relies primarily on the functional property of which muscle protein?", options: ["Myoglobin", "Collagen", "Myofibrillar protein", "Sarcoplasmic protein"], correctAnswer: 2, rationale: "Myofibrillar proteins (Actin and Myosin) are salt-soluble and responsible for the gel-forming ability essential for Surimi (fish paste) products." },
+        { id: 20, category: "Post-Harvest Fisheries", question: "Histamine poisoning (Scombroid poisoning) is most commonly associated with which family of fish?", options: ["Scombridae (Tuna/Mackerel)", "Cichlidae (Tilapia)", "Cyprinidae (Carp)", "Serranidae (Grouper)"], correctAnswer: 0, rationale: "Scombroid fish (Tuna, Mackerel) have high levels of free histidine, which bacteria convert to histamine if the fish is not chilled immediately." }
+    ];
+
+    // --- STATE VARIABLES ---
+    let currentQuiz = [];
+    let currentIndex = 0;
+    let score = 0;
+    let isAnswered = false;
+
+    // --- DOM ELEMENTS ---
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    
+    const qCategory = document.getElementById('q-category');
+    const qText = document.getElementById('q-text');
+    const optionsContainer = document.getElementById('options-container');
+    const rationaleBox = document.getElementById('rationale-display');
+    const rationaleText = document.getElementById('rationale-text');
+    const nextBtn = document.getElementById('next-btn');
+    const progressFill = document.getElementById('progress-fill');
+
+    // --- UTILITIES ---
+    
+    // Shuffle array (Fisher-Yates)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // --- APP LOGIC ---
+
+    function showStartScreen() {
+        startScreen.classList.add('active');
+        quizScreen.classList.remove('active');
+        resultScreen.classList.remove('active');
+    }
+
+    function startQuiz(mode) {
+        // Filter questions based on mode
+        let questions = [];
+        if (mode === 'all') {
+            questions = [...questionBank];
+        } else {
+            questions = questionBank.filter(q => q.category === mode);
+        }
+
+        // Initialize State
+        currentQuiz = shuffle(questions);
+        currentIndex = 0;
+        score = 0;
+        
+        // UI Updates
+        startScreen.classList.remove('active');
+        quizScreen.classList.add('active');
+        
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isAnswered = false;
+        const q = currentQuiz[currentIndex];
+        
+        // Update UI Text
+        qCategory.textContent = q.category;
+        qText.textContent = `${currentIndex + 1}. ${q.question}`;
+        
+        // Reset interactive elements
+        rationaleBox.style.display = 'none';
+        nextBtn.style.display = 'none';
+        optionsContainer.innerHTML = '';
+        
+        // Update Progress Bar
+        const progress = ((currentIndex) / currentQuiz.length) * 100;
+        progressFill.style.width = `${progress}%`;
+
+        // Create Option Buttons
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt; // A, B, C, D handled by index
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selectedIndex, btnElement) {
+        if (isAnswered) return; // Prevent multiple clicks
+        isAnswered = true;
+
+        const q = currentQuiz[currentIndex];
+        const correctIndex = q.correctAnswer;
+        const allOptions = optionsContainer.children;
+
+        // Visual Feedback
+        if (selectedIndex === correctIndex) {
+            btnElement.classList.add('correct');
+            score++;
+        } else {
+            btnElement.classList.add('wrong');
+            // Highlight the correct one automatically
+            allOptions[correctIndex].classList.add('correct');
+        }
+
+        // Show Rationale
+        rationaleText.textContent = q.rationale;
+        rationaleBox.style.display = 'block';
+        nextBtn.style.display = 'block';
+        
+        // Disable all buttons
+        for (let btn of allOptions) {
+            btn.disabled = true;
+        }
+    }
+
+    function nextQuestion() {
+        currentIndex++;
+        if (currentIndex < currentQuiz.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizScreen.classList.remove('active');
+        resultScreen.classList.add('active');
+
+        document.getElementById('final-score').textContent = score;
+        document.getElementById('total-questions').textContent = currentQuiz.length;
+
+        const percentage = (score / currentQuiz.length) * 100;
+        const msg = document.getElementById('feedback-msg');
+        
+        if (percentage >= 75) {
+            msg.textContent = "Excellent! You are Board Exam Ready!";
+            msg.style.color = "var(--success-color)";
+        } else if (percentage >= 50) {
+            msg.textContent = "Good job. Keep reviewing the Rationale.";
+            msg.style.color = "var(--accent-color)";
+        } else {
+            msg.textContent = "Keep studying. Focus on your weak subjects.";
+            msg.style.color = "var(--error-color)";
+        }
+    }
+</script>
+
+</body>
+</html>
