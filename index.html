@@ -1,271 +1,1370 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LCP Fisheries Board Reviewer (All-in-One)</title>
+    <title>LCP Fisheries Board Reviewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
     <style>
-        :root { --background: #f8fafc; --foreground: #020617; --card-bg: #ffffff; --border: #e2e8f0; }
-        .dark { --background: #020617; --foreground: #f8fafc; --card-bg: #0f172a; --border: #1e293b; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--background); color: var(--foreground); height: 100vh; overflow: hidden; }
-        .screen { padding: 4rem 1rem 6rem; height: 100vh; overflow-y: auto; }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border); }
-        .sub-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; transform: translateX(100%); transition: transform 0.3s; background: var(--background); overflow-y: auto; padding-top: 5rem; }
+        :root {
+            --background: #f8fafc; /* slate-50 */
+            --foreground: #020617; /* slate-950 */
+            --card-background: #ffffff;
+            --card-foreground: #0f172a; /* slate-900 */
+            --muted-foreground: #64748b; /* slate-500 */
+            --border: #e2e8f0; /* slate-200 */
+            --header-background: #ffffff;
+            --header-shadow: rgba(0,0,0,0.05);
+            --nav-background: #ffffff;
+            --nav-shadow: rgba(0,0,0,0.1);
+        }
+        .dark {
+            --background: #020617; /* slate-950 */
+            --foreground: #f8fafc; /* slate-50 */
+            --card-background: #0f172a; /* slate-900 */
+            --card-foreground: #f1f5f9; /* slate-100 */
+            --muted-foreground: #94a3b8; /* slate-400 */
+            --border: #1e293b; /* slate-800 */
+            --header-background: #0f172a;
+            --header-shadow: rgba(255,255,255,0.05);
+            --nav-background: #0f172a;
+            --nav-shadow: rgba(255,255,255,0.1);
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        .screen {
+            box-sizing: border-box;
+            padding: 4rem 1rem 5rem; /* Header/Nav padding */
+            height: 100vh;
+            overflow-y: auto;
+        }
+        header {
+            background-color: var(--header-background);
+            box-shadow: 0 2px 4px 0 var(--header-shadow);
+        }
+        nav {
+            background-color: var(--nav-background);
+            box-shadow: 0 -2px 5px var(--nav-shadow);
+        }
+        .card {
+            background-color: var(--card-background);
+            color: var(--card-foreground);
+        }
+        .text-muted { color: var(--muted-foreground); }
+        .border-custom { border-color: var(--border); }
+
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .active-nav { color: #2563eb; }
+        .disabled-card { filter: grayscale(1); opacity: 0.6; cursor: not-allowed; }
+        .sub-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 50;
+            transition: transform 0.3s ease-in-out; transform: translateX(100%);
+            background-color: var(--background);
+            overflow-y: auto;
+            padding-top: 4rem; /* For header */
+        }
         .sub-screen.active { transform: translateX(0); }
-        .markdown-body ul { list-style: disc; padding-left: 1.5rem; }
-        .option-btn { cursor: pointer; user-select: none; }
-        .option-btn:active { transform: scale(0.98); }
+        .chart-bar-fill { transition: height 0.8s ease-in-out; }
+        .gemini-content { white-space: pre-wrap; }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader {
+            border: 4px solid var(--border);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--card-background);
+            width: 180px;
+            height: 180px;
+            padding: 20px;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .logo-initials {
+            font-size: 3.5em;
+            font-weight: 700;
+            color: #007acc;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .logo-text {
+            font-size: 1em;
+            font-weight: 600;
+            color: #005a9c;
+            letter-spacing: 0.5px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Support modal styles */
+        .support-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 110;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.6);
+            padding: 1rem;
+        }
+        .support-modal.active { display: flex; }
+        .support-modal .modal-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card-background);
+            padding: 1.25rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+        }
+        .support-modal img.qr {
+            width: 260px;
+            height: 260px;
+            object-fit: contain;
+            margin: 0.5rem auto 1rem;
+            border-radius: 8px;
+            background: #fff;
+        }
+        .support-label { font-weight: 700; margin-bottom: 0.25rem; }
+        .support-sub { color: var(--muted-foreground); margin-bottom: 1rem; font-size: 0.95rem; }
+        .support-actions { display:flex; gap:0.5rem; justify-content:center; margin-top:0.75rem; flex-wrap:wrap; }
+        .support-floating-btn {
+            position: fixed;
+            right: 1rem;
+            bottom: 5.75rem; /* above bottom nav */
+            z-index: 60;
+            background: #ffb020;
+            color: #0b1220;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+            display:flex;
+            align-items:center;
+            gap:0.6rem;
+            font-weight:600;
+            cursor:pointer;
+        }
+        .support-floating-btn img { width:20px; height:20px; border-radius:4px; }
+
+        /* small responsive tweaks */
+        @media (max-width: 420px) {
+            .support-modal .modal-card { padding: 1rem; }
+            .support-modal img.qr { width: 200px; height: 200px; }
+        }
     </style>
 </head>
 <body class="antialiased">
 
-    <script>
-        // ======================================================
-        // DATABASE: PASTE YOUR QUESTIONS HERE INSIDE THE LISTS
-        // ======================================================
-        window.quizData = {
-            
-            "Aquaculture": [
-                { q: "Recommended slope for clay soil dike?", opts: ["1:1", "2:1", "1:2", "1:4"], a: "2:1" },
-                { q: "Calculate FCR: 1500kg feed / 1200kg fish.", opts: ["0.8", "1.25", "1.5", "1.2"], a: "1.25" },
-                { q: "Primary toxic metabolite in RAS?", opts: ["Nitrate", "Ammonia", "Nitrite", "CO2"], a: "Ammonia" },
-                { q: "Scientific name of Milkfish?", opts: ["Chanos chanos", "Oreochromis niloticus", "Lates calcarifer", "Mugil cephalus"], a: "Chanos chanos" },
-                { q: "Main purpose of liming ponds?", opts: ["Disinfect", "Increase Alkalinity/pH", "Kill predators", "Fertilize"], a: "Increase Alkalinity/pH" }
-                // PASTE MORE AQUACULTURE QUESTIONS HERE (Make sure to use commas!)
-            ],
+    <!-- Onboarding Modal -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-[100]">
+        <div class="card w-full max-w-md rounded-2xl shadow-xl p-8 text-center flex flex-col items-center overflow-hidden relative h-[32rem]">
+            <button id="onboarding-skip" class="absolute top-4 right-4 text-muted hover:text-foreground z-10 font-semibold">Skip</button>
+            <div id="onboarding-slides-container" class="w-full h-full">
+                <div id="onboarding-slides" class="flex transition-transform duration-300 h-full">
+                    <!-- Slide 1: Welcome -->
+                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
+                        <div class="logo-container">
+                          <div class="logo-initials">LCP</div>
+                          <span class="logo-text">Fisheries Board Reviewer</span>
+                        </div>
+                        <h2 class="text-3xl font-bold mb-2">Welcome!</h2>
+                        <p class="text-muted">This app is developed by <strong>Lander Plantado</strong> to help you in the preparation for the upcoming exam.</p>
+                    </div>
+                    <!-- Slide 2: Features -->
+                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
+                        <h2 class="text-2xl font-bold mb-4">Powerful Features</h2>
+                        <ul class="text-left space-y-2 text-muted">
+                            <li>✅ Comprehensive Quizzes</li>
+                            <li>✨ AI-Powered Scenario Challenges</li>
+                            <li>📊 Performance Dashboard</li>
+                            <li>📰 Latest Industry News</li>
+                        </ul>
+                    </div>
+                     <!-- Slide 3: Navigation -->
+                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4 text-center">
+                        <h2 class="text-2xl font-bold mb-4">How to Navigate</h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 mb-4"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+                        <p class="text-muted">Use the bar at the bottom to switch between <strong>Home</strong>, <strong>Quiz</strong>, <strong>Dashboard</strong>, and <strong>Settings</strong>.</p>
+                    </div>
+                    <!-- Slide 4: Starting a Quiz -->
+                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4 text-center">
+                        <h2 class="text-2xl font-bold mb-4">Take a Quiz</h2>
+                         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500 mb-4"><path d="M21.5 2H14a2 2 0 0 0-2 2v2"></path><path d="M4 12a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"></path><path d="m14 6 7 7"></path><path d="M12 10h.01"></path><path d="M16 14h.01"></path><path d="M8 14h.01"></path></svg>
+                        <p class="text-muted">Go to the <strong>Quiz</strong> tab, select a subject, choose the number of items, and start your test!</p>
+                    </div>
+                    <!-- Slide 5: API Key -->
+                    <div class="w-full flex-shrink-0 flex flex-col items-center justify-center p-4">
+                         <h2 class="text-2xl font-bold mb-4">Unlock AI Features</h2>
+                         <p class="text-muted mb-4">Enter your Gemini API key to enable Scenario Challenges, Field Intel, and Study Guides.</p>
+                         <input type="password" id="onboarding-api-key-input" class="w-full p-3 border-custom rounded-lg mb-4 bg-transparent" placeholder="Paste your API Key here">
+                         <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 hover:underline text-sm block">Get a free key from Google AI Studio</a>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute bottom-8 left-0 right-0 px-8">
+                <div class="flex justify-between items-center">
+                    <button id="onboarding-prev" class="text-blue-500 opacity-0" disabled>Back</button>
+                    <div id="onboarding-dots" class="flex gap-2"></div>
+                    <button id="onboarding-next" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            "Capture Fisheries": [
-                { q: "Which is an Active Gear?", opts: ["Gill net", "Fish pot", "Trawl", "Longline"], a: "Trawl" },
-                { q: "Municipal waters distance?", opts: ["7km", "10km", "15km", "20km"], a: "15km" },
-                { q: "Starboard refers to?", opts: ["Left", "Right", "Rear", "Front"], a: "Right" },
-                { q: "Mesh size is measured by?", opts: ["Knot to knot (stretched)", "Diagonal", "Area", "Diameter"], a: "Knot to knot (stretched)" }
-                // PASTE MORE CAPTURE QUESTIONS HERE
-            ],
+    <!-- Support (GCash) Modal -->
+    <div id="support-modal" class="support-modal" aria-hidden="true">
+        <div class="modal-card card p-4 rounded-xl">
+            <button id="support-close" class="absolute right-4 top-4 text-muted hover:text-foreground font-semibold">✕</button>
+            <div class="mb-2">
+                <div class="support-label">Support this project</div>
+                <div class="support-sub">Buy me a coffee — scan the GCash QR code below</div>
+            </div>
+            <img id="support-qr-img" class="qr" src="https://placehold.co/300x300/FFFFFF/000000?text=GCash+QR" alt="GCash QR Code">
+            <div id="support-name" class="text-sm text-muted">No name set</div>
+            <div class="support-actions">
+                <button id="support-copy-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg text-sm">Copy info</button>
+                <a id="support-open-link" class="hidden bg-green-600 text-white py-2 px-4 rounded-lg text-sm" target="_blank" rel="noopener noreferrer">Open</a>
+            </div>
+        </div>
+    </div>
 
-            "Ecology & Resources": [
-                { q: "Sharp density gradient in water?", opts: ["Halocline", "Thermocline", "Pycnocline", "Chemocline"], a: "Pycnocline" },
-                { q: "Cause of Paralytic Shellfish Poisoning?", opts: ["Sargassum", "Pyrodinium", "Caulerpa", "Kappaphycus"], a: "Pyrodinium" },
-                { q: "Mangrove aerial roots?", opts: ["Pneumatophores", "Prop roots", "Buttress", "Stilt"], a: "Pneumatophores" }
-                // PASTE MORE ECOLOGY QUESTIONS HERE
-            ],
-
-            "Post-Harvest": [
-                { q: "Primary concern in canned products?", opts: ["Salmonella", "E. coli", "C. botulinum", "Vibrio"], a: "C. botulinum" },
-                { q: "Stiffening of fish muscle after death?", opts: ["Autolysis", "Rigor Mortis", "Putrefaction", "Oxidation"], a: "Rigor Mortis" },
-                { q: "Histamine poisoning fish family?", opts: ["Scombridae", "Cichlidae", "Cyprinidae", "Serranidae"], a: "Scombridae" }
-                // PASTE MORE POST-HARVEST QUESTIONS HERE
-            ],
-
-            "Mock Exam": [] // Leave empty, fills automatically
-        };
-    </script>
-    <header class="fixed top-0 w-full h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 z-40">
-        <h1 class="font-bold text-lg text-blue-600">LCP Reviewer</h1>
+    <!-- Persistent Header -->
+    <header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-center px-4 z-40 border-b border-custom">
+        <h1 id="header-title" class="text-xl font-bold text-blue-600">Home</h1>
     </header>
 
     <main>
-        <div id="login-screen" class="screen flex flex-col items-center justify-center z-50 absolute inset-0 bg-white dark:bg-slate-950">
-            <div class="card p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
-                <div class="mb-6"><span class="text-4xl">👨‍🎓</span><h2 class="text-2xl font-bold mt-4">Fisheries Reviewer</h2></div>
-                <input type="text" id="username-input" class="w-full p-4 border rounded-xl mb-4 bg-transparent" placeholder="Enter Name">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg">Start</button>
+        <div id="home-screen" class="screen">
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-muted">Overall Progress</h3>
+                    <p id="home-overall-average" class="text-5xl font-bold text-blue-600 mt-2">--%</p>
+                </div>
+                 <div class="card p-6 rounded-xl shadow-md text-center">
+                    <h3 class="text-lg font-semibold text-muted">Quizzes Taken</h3>
+                    <p id="home-quizzes-taken" class="text-5xl font-bold text-blue-600 mt-2">0</p>
+                </div>
+                <div id="mock-exam-card" class="md:col-span-2 card-hover bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg cursor-pointer">
+                    <h3 class="text-2xl font-bold">Mock Board Exam</h3>
+                    <p class="mt-1 opacity-90">Simulate the real exam (100 items, 2 hours).</p>
+                </div>
+                 <div id="scenario-challenge-card" class="gemini-feature md:col-span-2 card-hover bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6 rounded-xl shadow-lg cursor-pointer">
+                    <h3 class="text-2xl font-bold">✨ Scenario Challenge</h3>
+                    <p class="mt-1 opacity-90">Test your practical skills with AI feedback.</p>
+                </div>
+                 <div id="field-intel-card" class="gemini-feature md:col-span-2 card-hover bg-gradient-to-r from-cyan-500 to-sky-600 text-white p-6 rounded-xl shadow-lg cursor-pointer">
+                    <h3 class="text-2xl font-bold">✨ Fisheries Field Intel</h3>
+                    <p class="mt-1 opacity-90">Get the latest news and research.</p>
+                </div>
+             </div>
+        </div>
+        
+        <div id="subjects-screen" class="screen hidden">
+            <div id="subject-list-container" class="space-y-4"></div>
+        </div>
+        
+        <div id="dashboard-screen" class="screen hidden">
+            <div id="dashboard-content" class="space-y-8">
+                <div id="mock-exam-dashboard" class="hidden">
+                    <h3 class="text-xl font-bold mb-4">Mock Board Exam History</h3>
+                    <div id="mock-exam-details" class="space-y-4"></div>
+                </div>
+                <div class="card p-6 rounded-xl shadow-md">
+                    <h3 class="text-xl font-bold">Scores by Subject</h3>
+                    <div id="score-chart" class="w-full h-64 flex justify-around items-end gap-2 border-l border-b border-custom pb-2 pl-2 mt-4"></div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Detailed Breakdown by Subject</h3>
+                    <div id="subject-details" class="space-y-4"></div>
+                </div>
             </div>
         </div>
 
-        <div id="home-screen" class="screen hidden">
-             <div class="mb-6"><h2 class="text-2xl font-bold">Hi, <span id="user-greeting" class="text-blue-600">Student</span>!</h2></div>
-             <div class="grid grid-cols-2 gap-4">
-                <div class="card p-4 rounded-xl text-center shadow-sm"><p class="text-xs text-gray-500 uppercase">Mastery</p><p id="home-avg" class="text-3xl font-black text-blue-600">0%</p></div>
-                <div class="card p-4 rounded-xl text-center shadow-sm"><p class="text-xs text-gray-500 uppercase">Quizzes</p><p id="home-count" class="text-3xl font-black text-blue-600">0</p></div>
-                
-                <div onclick="openSetup('Aquaculture')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-blue-400 hover:bg-gray-50"><h3 class="font-bold">🐟 Aquaculture</h3></div>
-                <div onclick="openSetup('Capture Fisheries')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-teal-400 hover:bg-gray-50"><h3 class="font-bold">⚓ Capture</h3></div>
-                <div onclick="openSetup('Ecology & Resources')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-green-400 hover:bg-gray-50"><h3 class="font-bold">🌱 Ecology</h3></div>
-                <div onclick="openSetup('Post-Harvest')" class="card p-4 rounded-xl shadow-sm cursor-pointer border-l-4 border-orange-400 hover:bg-gray-50"><h3 class="font-bold">🥫 Post-Harvest</h3></div>
-                
-                <div onclick="openSetup('Mock Exam')" class="col-span-2 card p-6 rounded-xl bg-blue-600 text-white shadow-lg cursor-pointer flex justify-between items-center">
-                    <div><h3 class="font-bold text-xl">📚 Mock Exam</h3><p class="text-sm opacity-90">Mixed subjects</p></div><span class="text-2xl">➔</span>
+        <div id="settings-screen" class="screen hidden">
+             <div class="w-full max-w-md mx-auto space-y-8">
+                <div class="card rounded-2xl shadow-md p-8">
+                    <h3 class="text-2xl font-bold mb-4">Gemini API Key</h3>
+                    <p class="text-muted mb-6">Your key is required for AI features and is stored locally.</p>
+                    <input type="password" id="api-key-input" class="w-full p-3 border-custom rounded-lg mb-4 bg-transparent" placeholder="Paste API Key here">
+                    <p id="api-key-status" class="text-sm mb-4 text-center"></p>
+                    <button id="save-api-key-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg">Save Key</button>
+                </div>
+                 <div class="card rounded-2xl shadow-md p-8">
+                    <h3 class="text-2xl font-bold mb-4">Theme</h3>
+                    <p class="text-muted mb-6">Choose your preferred app appearance.</p>
+                    <div class="flex justify-around">
+                        <button data-theme="light" class="theme-btn flex flex-col items-center gap-2 text-muted">
+                            <div class="w-16 h-12 bg-slate-50 border-2 border-custom rounded-lg"></div> Light
+                        </button>
+                         <button data-theme="dark" class="theme-btn flex flex-col items-center gap-2 text-muted">
+                            <div class="w-16 h-12 bg-slate-900 border-2 border-custom rounded-lg"></div> Dark
+                        </button>
+                         <button data-theme="system" class="theme-btn flex flex-col items-center gap-2 text-muted">
+                            <div class="w-16 h-12 bg-gradient-to-br from-slate-50 from-50% to-slate-900 to-50% border-2 border-custom rounded-lg"></div> System
+                        </button>
+                    </div>
+                </div>
+
+                <!-- NEW: Support / GCash settings -->
+                <div class="card rounded-2xl shadow-md p-8">
+                    <h3 class="text-2xl font-bold mb-4">Support (GCash)</h3>
+                    <p class="text-muted mb-4">Add your GCash QR image URL and an optional label (name/number). This will be shown when users tap "Support this project".</p>
+                    <input type="url" id="gcash-qr-url-input" class="w-full p-3 border-custom rounded-lg mb-3 bg-transparent" placeholder="Paste GCash QR image URL (e.g. https://.../my-qrcode.png)">
+                    <input type="text" id="gcash-name-input" class="w-full p-3 border-custom rounded-lg mb-3 bg-transparent" placeholder="Optional name or number to display (e.g. John Doe | 0917xxxxxxx)">
+                    <p id="gcash-status" class="text-sm mb-4 text-center text-muted"></p>
+                    <div class="flex gap-3">
+                        <button id="save-gcash-btn" class="flex-1 bg-yellow-500 text-black font-bold py-3 px-4 rounded-lg">Save Support Info</button>
+                        <button id="clear-gcash-btn" class="flex-1 bg-red-500 text-white font-bold py-3 px-4 rounded-lg">Clear</button>
+                    </div>
+                </div>
+
+             </div>
+        </div>
+        
+        <!-- Sub-Screens -->
+        <div id="item-selection-screen" class="sub-screen p-4 flex flex-col items-center justify-center text-center">
+            <div class="card w-full max-w-md rounded-2xl shadow-xl p-8">
+                <h2 id="item-select-subject" class="text-3xl font-bold mb-6"></h2>
+                <p class="text-muted mb-8">Select the number of questions:</p>
+                <div id="item-buttons" class="flex flex-col gap-4">
+                    <button data-items="10" class="item-select-btn w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg">10 Items</button>
+                    <button data-items="25" class="item-select-btn w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg">25 Items</button>
+                    <button data-items="50" class="item-select-btn w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg">50 Items</button>
+                </div>
+                <button id="back-to-subjects-btn" class="mt-8 text-muted font-semibold">Back to Subjects</button>
+            </div>
+        </div>
+
+        <div id="quiz-container" class="sub-screen p-4 flex flex-col items-center justify-center">
+            <div class="card w-full max-w-3xl rounded-2xl shadow-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="quiz-subject" class="text-lg font-bold text-blue-600"></h2>
+                    <div class="text-md font-semibold text-muted"><span id="question-number"></span> / <span id="total-questions"></span></div>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-4"><div id="progress-bar" class="bg-blue-500 h-2 rounded-full"></div></div>
+                <div id="question-area" class="text-lg font-semibold mb-6 min-h-[70px]"></div>
+                <div id="options-area" class="flex flex-col gap-3"></div>
+                <div id="feedback-area" class="mt-4 text-md font-medium min-h-[40px] flex items-center justify-between flex-wrap gap-2"></div>
+                <div id="action-buttons" class="hidden mt-4 flex justify-between">
+                    <button id="cancel-btn" class="bg-red-500 text-white py-2 px-5 rounded-lg">End</button>
+                    <button id="continue-btn" class="bg-blue-500 text-white py-2 px-5 rounded-lg">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-container" class="sub-screen p-4 text-center flex flex-col items-center justify-center">
+             <div class="card w-full max-w-2xl rounded-2xl shadow-xl p-8">
+                <h2 class="text-3xl font-bold mb-4">Quiz Completed!</h2>
+                <p id="score-text" class="text-lg text-muted mb-4"></p>
+                <div class="relative w-40 h-40 mx-auto mb-6">
+                    <span id="final-score" class="absolute inset-0 flex items-center justify-center text-5xl font-bold text-blue-600"></span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4">
+                     <button id="review-answers-btn" class="bg-green-500 text-white font-bold py-3 px-6 rounded-lg">Review</button>
+                    <button id="generate-study-guide-btn" class="gemini-feature bg-purple-500 text-white font-bold py-3 px-6 rounded-lg">✨ Study Guide</button>
+                    <button id="restart-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="review-screen" class="sub-screen p-4 pt-20">
+            <div class="card w-full max-w-4xl mx-auto rounded-2xl shadow-xl p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h2 class="text-2xl font-bold">Review Answers</h2>
+                    <button id="review-back-btn" class="text-muted font-semibold">Back to Results</button>
+                </div>
+                <div id="review-content" class="flex-grow overflow-y-auto space-y-4">
+                    <!-- Review content will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <div id="scenario-screen" class="sub-screen p-4 pt-20">
+             <div class="card w-full max-w-4xl mx-auto rounded-2xl shadow-xl p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h2 class="text-2xl font-bold">✨ Scenario Challenge</h2>
+                    <button id="scenario-back-btn" class="text-muted font-semibold">Back</button>
+                </div>
+                <div class="flex-grow overflow-y-auto">
+                    <!-- Scenario Content Here -->
                 </div>
              </div>
         </div>
 
-        <div id="setup-screen" class="sub-screen p-6 flex flex-col items-center justify-center text-center">
-            <h2 id="setup-subject" class="text-2xl font-bold text-blue-600 mb-6">Subject</h2>
-            <div class="w-full max-w-sm space-y-3">
-                <button onclick="startQuiz(10)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold">10 Questions</button>
-                <button onclick="startQuiz(25)" class="w-full py-4 border-2 border-blue-100 hover:border-blue-500 rounded-xl font-bold">25 Questions</button>
-                <button onclick="closeSubScreen()" class="mt-6 text-gray-500">Cancel</button>
-            </div>
-        </div>
-
-        <div id="quiz-screen" class="sub-screen p-4">
-            <div class="max-w-2xl mx-auto">
-                <div class="flex justify-between text-sm font-bold mb-2 text-gray-500"><span id="quiz-lbl">Subject</span><span><span id="q-curr">1</span>/<span id="q-total">10</span></span></div>
-                <div class="h-2 bg-gray-200 rounded-full mb-6"><div id="progress" class="h-2 bg-blue-600 rounded-full w-0 transition-all"></div></div>
-                <div id="q-text" class="text-lg font-medium mb-6 leading-relaxed">Loading...</div>
-                <div id="options" class="space-y-3"></div>
-                <div id="quiz-controls" class="hidden mt-8 flex justify-between">
-                    <button onclick="finishQuiz()" class="text-red-500 font-bold">End</button>
-                    <button onclick="nextQuestion()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg">Next ➜</button>
+        <div id="intel-screen" class="sub-screen p-4 pt-20">
+             <div class="card w-full max-w-4xl mx-auto rounded-2xl shadow-xl p-6 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h2 class="text-2xl font-bold">✨ Fisheries Field Intel</h2>
+                    <button id="intel-back-btn" class="text-muted font-semibold">Back</button>
                 </div>
-            </div>
-        </div>
-
-        <div id="result-screen" class="sub-screen p-6 flex flex-col items-center justify-center text-center">
-            <div class="card p-8 rounded-2xl shadow-xl w-full max-w-md">
-                <h2 class="text-2xl font-bold mb-2">Result</h2>
-                <div id="final-score" class="text-6xl font-black text-blue-600 mb-4">0%</div>
-                <button onclick="closeSubScreen()" class="w-full py-3 bg-gray-100 rounded-lg font-bold mb-2">Done</button>
-            </div>
+                <div class="flex-grow overflow-y-auto">
+                    <!-- Intel Content Here -->
+                </div>
+             </div>
         </div>
     </main>
+    
+    <!-- Persistent Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 h-20 flex justify-around items-center z-40 border-t border-custom">
+        <button data-screen="home-screen" class="nav-btn flex flex-col items-center justify-center text-muted active-nav">
+             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <span class="text-xs mt-1">Home</span>
+        </button>
+        <button data-screen="subjects-screen" class="nav-btn flex flex-col items-center justify-center text-muted">
+             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span class="text-xs mt-1">Quiz</span>
+        </button>
+        <button data-screen="dashboard-screen" class="nav-btn flex flex-col items-center justify-center text-muted">
+             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <span class="text-xs mt-1">Dashboard</span>
+        </button>
+         <button data-screen="settings-screen" class="nav-btn flex flex-col items-center justify-center text-muted">
+             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <span class="text-xs mt-1">Settings</span>
+        </button>
+        <!-- Support button added to footer -->
+        <button id="support-btn" title="Support this project" class="flex flex-col items-center justify-center text-muted">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-6-4.35-9-7.09A5.5 5.5 0 0 1 6 4c1.74 0 3.29.9 4 2.09C11.71 4.9 13.26 4 15 4a5.5 5.5 0 0 1 3 9.91C18 16.65 12 21 12 21z" /></svg>
+            <span class="text-xs mt-1">Support</span>
+        </button>
+    </nav>
 
+    <!-- Floating quick support button (optional, duplicates footer support) -->
+    <div id="support-floating" class="support-floating-btn" title="Support this project">
+        <img src="https://placehold.co/32x32/FFFFFF/000000?text=$" alt="coffee">
+        <span class="text-sm">Buy me a coffee</span>
+    </div>
+    
     <script>
-        // State Variables
-        let currentQuiz = [];
-        let qIndex = 0;
+        // --- DATA ---
+        const fullQuizData = {
+            "Aquaculture": {
+                description: "Study the science and practice of cultivating aquatic organisms.",
+                image: "https://images.unsplash.com/photo-1585938389614-7c28c4654d6d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                questions: [
+                    { question: "Which is NOT a primary consideration for aquaculture site selection?", options: ["Water quality", "Proximity to market", "Soil type", "Local political climate"], answer: "Local political climate" },
+                    { question: "What is the main purpose of a tertiary dike in a fishpond system?", options: ["To protect against flooding", "To hold water within the pond", "To serve as an access road", "To separate ponds"], answer: "To hold water within the pond" },
+                    { question: "Which water quality parameter is often the most critical in intensive aquaculture?", options: ["Temperature", "Salinity", "Dissolved Oxygen (DO)", "pH"], answer: "Dissolved Oxygen (DO)" },
+                    { question: "The process of gradually acclimating aquatic organisms to a new environment is called:", options: ["Quarantine", "Hardening", "Disinfection", "Acclimatization"], answer: "Acclimatization" },
+                    { question: "Which of the following is an example of a non-infectious disease in fish?", options: ["White Spot Syndrome", "Vibriosis", "Nutritional deficiency", "Ichthyophthiriasis"], answer: "Nutritional deficiency" },
+                    { question: "Proteins are made up of smaller units called:", options: ["Fatty acids", "Amino acids", "Monosaccharides", "Nucleotides"], answer: "Amino acids" },
+                    { question: "Which of these is considered a macronutrient in fish feed?", options: ["Vitamin C", "Iron", "Lipids", "Zinc"], answer: "Lipids" },
+                    { question: "A formulated feed in the form of fine particles, suitable for fry, is known as:", options: ["Pellet", "Crumble", "Mash/Powder", "Flake"], answer: "Mash/Powder" },
+                    { question: "What is the primary function of carbohydrates in a fish diet?", options: ["Energy source", "Build muscle tissue", "Hone production", "Improve skin color"], answer: "Energy source" },
+                    { question: "An essential amino acid for fish is one that:", options: ["Is required in large quantities", "Cannot be synthesized by the fish and must be in the diet", "Is only needed during the larval stage", "Is a component of scales"], answer: "Cannot be synthesized by the fish and must be in the diet" },
+                    { question: "White Spot Syndrome Virus (WSSV) is a major pathogen affecting which group of aquatic animals?", options: ["Tilapia", "Shrimp", "Milkfish", "Catfish"], answer: "Shrimp" },
+                    { question: "Luminous Vibriosis in shrimp is caused by a:", options: ["Virus", "Fungus", "Bacterium", "Parasite"], answer: "Bacterium" },
+                    { question: "'Ich' or White Spot Disease in freshwater fish is caused by which type of organism?", options: ["A virus", "A bacterium", "A protozoan parasite", "A crustacean parasite"], answer: "A protozoan parasite" },
+                    { question: "The use of a 'green water' technique in tilapia culture primarily aims to:", options: ["Improve water clarity", "Increase water temperature", "Promote natural food organisms like phytoplankton", "Reduce the need for water exchange"], answer: "Promote natural food organisms like phytoplankton" },
+                    { question: "Biological Oxygen Demand (BOD) is a measure of:", options: ["The amount of oxygen produced by plants", "The amount of oxygen fish need to survive", "The amount of oxygen consumed by microorganisms to decompose organic waste", "The total dissolved oxygen in the water"], answer: "The amount of oxygen consumed by microorganisms to decompose organic waste" },
+                    { question: "Which part of a pond gate is adjusted to control the water level inside the pond?", options: ["Buttress", "Flashboard", "Side walls", "Apron"], answer: "Flashboard" },
+                    { question: "Muck soil is generally considered unsuitable for pond construction because it is:", options: ["Too sandy and porous", "Too acidic", "Too heavy and difficult to work with", "Highly organic and unstable"], answer: "Highly organic and unstable" },
+                    { question: "In cage culture, what is the primary purpose of the mooring system?", options: ["To attract fish", "To keep the cage in a fixed location", "To provide a framework for the net", "To facilitate feeding"], answer: "To keep the cage in a fixed location" },
+                    { question: "Tilapia Lake Virus (TiLV) primarily affects the:", options: ["Gills and skin", "Liver and nervous system", "Stomach and intestines", "Fins and tail"], answer: "Liver and nervous system" },
+                    { question: "A practical feed is one that is:", options: ["Composed of highly purified ingredients for research", "Composed of common and cost-effective ingredients for commercial farming", "Only fed to fish in their natural habitat", "A liquid formulation for fry"], answer: "Composed of common and cost-effective ingredients for commercial farming" },
+                    { question: "Which chemical compound acts as a buffer in the water, helping to stabilize pH?", options: ["Ammonia", "Nitrite", "Carbon Dioxide/Bicarbonate system", "Hydrogen Sulfide"], answer: "Carbon Dioxide/Bicarbonate system" },
+                    { question: "Motile Aeromonad Septicemia (MAS) in freshwater fish is a disease caused by:", options: ["A virus", "A bacterium", "A fungus", "Poor water quality stress"], answer: "A bacterium" },
+                    { question: "Argulus, also known as the fish louse, is a type of:", options: ["Protozoan", "Helminth", "Crustacean parasite", "Myxozoan"], answer: "Crustacean parasite" },
+                    { question: "Which of these is NOT a desirable characteristic for a candidate species for aquaculture?", options: ["Fast growth rate", "Tolerance to crowding", "Carnivorous feeding habit", "Resistance to disease"], answer: "Carnivorous feeding habit" },
+                    { question: "What is the term for farming of aquatic organisms in marine or saltwater environments?", options: ["Limniculture", "Mariculture", "Potamoculture", "Sericulture"], answer: "Mariculture" },
+                    { question: "The process of removing undesirable or nuisance species from a pond before stocking is called:", options: ["Liming", "Fertilization", "Pond poisoning/clearing", "Aeration"], answer: "Pond poisoning/clearing" },
+                    { question: "What is the primary purpose of liming in aquaculture ponds?", options: ["To kill fish parasites", "To increase water hardness and alkalinity", "To add nutrients for plankton growth", "To make the water clearer"], answer: "To increase water hardness and alkalinity" },
+                    { question: "Which of these is a common method for harvesting milkfish from large brackishwater ponds?", options: ["Pole and line", "Gill netting", "Total drainage and collection", "Trawling"], answer: "Total drainage and collection" },
+                    { question: "The Food Conversion Ratio (FCR) is a measure of:", options: ["The percentage of protein in the feed", "The rate at which fish grow", "The efficiency of feed utilization by the fish", "The cost of feed per kilogram of fish produced"], answer: "The efficiency of feed utilization by the fish" },
+                    { question: "Which of the following is a symptom of Columnaris disease in fish?", options: ["Swollen abdomen (dropsy)", "White spots on skin and fins", "Saddle-back lesions near the dorsal fin", "Pop-eye (exophthalmia)"], answer: "Saddle-back lesions near the dorsal fin" },
+                    { question: "An 'autotroph' is an organism that:", options: ["Feeds on other organisms for energy", "Produces its own food, usually through photosynthesis", "Breaks down dead organic material", "Lives as a parasite on another organism"], answer: "Produces its own food, usually through photosynthesis" },
+                    { question: "In a semi-intensive aquaculture system, fish obtain nutrition from:", options: ["Natural food organisms only", "Formulated feeds only", "A combination of natural food and supplementary feeds", "The water column through absorption"], answer: "A combination of natural food and supplementary feeds" },
+                    { question: "Which of these hormones is commonly used to induce spawning in fish?", options: ["Testosterone", "Estrogen", "Human Chorionic Gonadotropin (HCG)", "Insulin"], answer: "Human Chorionic Gonadotropin (HCG)" },
+                    { question: "The term 'aquaponics' refers to the integration of:", options: ["Aquaculture and marine biology", "Aquaculture and hydroponics", "Aquaculture and agriculture", "Aquaculture and solar power"], answer: "Aquaculture and hydroponics" },
+                    { question: "What is the function of the lateral line in fish?", options: ["Respiration", "Detecting water movements and pressure changes", "Reproduction", "Digestion"], answer: "Detecting water movements and pressure changes" },
+                    { question: "'Lab-lab' is a traditional natural food source in Philippine brackishwater ponds, primarily composed of:", options: ["Small shrimps and crabs", "A complex of benthic algae and microorganisms", "Aquatic insects and larvae", "Floating macrophytes"], answer: "A complex of benthic algae and microorganisms" },
+                    { question: "Which nutrient is most often the limiting factor for phytoplankton growth in freshwater aquaculture?", options: ["Carbon", "Nitrogen", "Phosphorus", "Potassium"], answer: "Phosphorus" },
+                    { question: "A 'probiotic' in aquaculture is used to:", options: ["Kill harmful bacteria", "Improve the microbial balance in the gut or water", "Provide essential vitamins", "Increase water temperature"], answer: "Improve the microbial balance in the gut or water" },
+                    { question: "What does 'polyculture' mean in the context of aquaculture?", options: ["Farming a single species in multiple ponds", "Farming fish of different age groups together", "Farming two or more compatible species in the same pond", "Farming fish in cages and ponds simultaneously"], answer: "Farming two or more compatible species in the same pond" },
+                    { question: "Which of these is a characteristic of a 'catadromous' fish like the eel?", options: ["It lives in freshwater and spawns in the sea", "It lives in the sea and spawns in freshwater", "It lives and spawns only in freshwater", "It lives and spawns only in saltwater"], answer: "It lives in freshwater and spawns in the sea" },
+                    { question: "The process of egg development in female fish is called:", options: ["Spermatogenesis", "Oogenesis", "Fertilization", "Gastrulation"], answer: "Oogenesis" },
+                    { question: "Which of the following is NOT a method of aeration used in aquaculture?", options: ["Paddlewheel aerators", "Diffusers/airstones", "Propeller-aspirator pumps", "Secchi disk"], answer: "Secchi disk" },
+                    { question: "Ammonia is toxic to fish, especially in its ____ form.", options: ["Ionized (NH4+)", "Unionized (NH3)", "Nitrite (NO2-)", "Nitrate (NO3-)"], answer: "Unionized (NH3)" },
+                    { question: "The process by which bacteria convert ammonia to nitrate is called:", options: ["Denitrification", "Nitrogen fixation", "Nitrification", "Ammonification"], answer: "Nitrification" },
+                    { question: "Which of these is a common binder used in formulating fish pellets?", options: ["Fish oil", "Soybean meal", "Starch or wheat flour", "Rice bran"], answer: "Starch or wheat flour" },
+                    { question: "What is the primary advantage of using Specific Pathogen-Free (SPF) shrimp postlarvae?", options: ["They grow faster than normal shrimp", "They are cheaper to purchase", "They are certified to be free from certain major diseases", "They are more colorful"], answer: "They are certified to be free from certain major diseases" },
+                    { question: "The culture of seaweeds is a major component of Philippine aquaculture. Which is the most commonly cultured genus?", options: ["Sargassum", "Gracilaria", "Eucheuma/Kappaphycus", "Ulva"], answer: "Eucheuma/Kappaphycus" },
+                    { question: "What is the function of a 'hapa' in a fishpond?", options: ["A type of harvesting gear", "An enclosure net used for breeding or nursing", "A water control structure", "A type of feed dispenser"], answer: "An enclosure net used for breeding or nursing" },
+                    { question: "Which of the following is a filter-feeding fish often used in polyculture to improve water quality?", options: ["Grouper", "Snakehead", "Silver carp", "Common carp"], answer: "Silver carp" },
+                    { question: "The measurement of water clarity using a Secchi disk indicates the:", options: ["Water temperature", "Dissolved oxygen level", "Abundance of phytoplankton", "Water depth"], answer: "Abundance of phytoplankton" },
+                ]
+            },
+            "Capture Fisheries": {
+                description: "Learn about the methods and techniques for harvesting wild fish.",
+                image: "https://images.unsplash.com/photo-1579290240428-239b0a1a8c04?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                questions: [
+                     { question: "What does MSY stand for in fisheries management?", options: ["Minimum Sustainable Yield", "Maximum Sustainable Yield", "Maximum Stock Yield", "Multiple Species Yield"], answer: "Maximum Sustainable Yield" },
+                     { question: "Which of the following is a passive fishing gear?", options: ["Trawl", "Gillnet", "Dredge", "Pole and line"], answer: "Gillnet" },
+                     { question: "Recruitment Overfishing occurs when:", options: ["Too many small fish are caught", "Fishing effort is below FMSY", "The spawning stock is depleted to a level where it cannot replenish itself", "The catch exceeds the Total Allowable Catch (TAC)"], answer: "The spawning stock is depleted to a level where it cannot replenish itself" },
+                     { question: "A purse seine is a type of fishing gear that primarily targets:", options: ["Bottom-dwelling fish", "Individual large fish", "Schools of pelagic fish", "Crustaceans"], answer: "Schools of pelagic fish" },
+                     { question: "Muro-ami, a banned fishing method, is destructive because it involves:", options: ["Using explosives", "Using cyanide", "Pounding coral reefs to scare fish out", "Using fine-mesh nets that catch juveniles"], answer: "Pounding coral reefs to scare fish out" },
+                     { question: "The sum of Fishing Mortality (F) and Natural Mortality (M) gives the:", options: ["Total Mortality (Z)", "Recruitment Rate (R)", "Growth Rate (G)", "Catch Per Unit Effort (CPUE)"], answer: "Total Mortality (Z)" },
+                     { question: "A fish stock is best defined as:", options: ["The total number of fish in the ocean", "A group of fish of the same species living in the same geographic area", "A management unit of fish, which may be composed of one or more populations", "The commercially valuable fish in a region"], answer: "A management unit of fish, which may be composed of one or more populations" },
+                     { question: "Which of the following is an example of Fishery-INDEPENDENT data?", options: ["Logbook records from a fishing vessel", "Fish landing data from a port", "A scientific trawl survey conducted by a research vessel", "Market sales data"], answer: "A scientific trawl survey conducted by a research vessel" },
+                     { question: "A trammel net is designed to be an:", options: ["Encircling net", "Entangling net", "Towed net", "Lift net"], answer: "Entangling net" },
+                     { question: "Gross Tonnage (GT) of a fishing vessel is a measure of its:", options: ["Weight", "Length", "Engine power", "Internal volume"], answer: "Internal volume" },
+                     { question: "Salinity is a measure of the total amount of dissolved ____ in water.", options: ["Gases", "Solids (salts)", "Organic matter", "Pollutants"], answer: "Solids (salts)" },
+                     { question: "The layer of the atmosphere where most weather phenomena occur is the:", options: ["Mesosphere", "Stratosphere", "Troposphere", "Thermosphere"], answer: "Troposphere" },
+                     { question: "PAGASA is the Philippine government agency responsible for:", options: ["Fisheries management", "Environmental protection", "Weather forecasting", "Maritime safety"], answer: "Weather forecasting" },
+                     { question: "An Ebb Tide refers to the period when the tide is:", options: ["Rising", "Falling", "At its highest level", "At its lowest level"], answer: "Falling" },
+                     { question: "The primary driving force of major ocean currents is:", options: ["Wind", "Tides", "Earth's rotation", "Differences in water density"], answer: "Wind" },
+                     { question: "Under the amended Philippine Fisheries Code (RA 10654), what is the term for fishing without the necessary license or permit?", options: ["Unreported Fishing", "Illegal Fishing", "Unregulated Fishing", "Destructive Fishing"], answer: "Illegal Fishing" },
+                     { question: "Which of the following is NOT a prohibited act under the Philippine Fisheries Code?", options: ["Use of dynamite", "Use of gillnets with legal mesh sizes", "Use of cyanide", "Commercial fishing in municipal waters"], answer: "Use of gillnets with legal mesh sizes" },
+                     { question: "The Swept Area Method is most suitable for estimating the abundance of:", options: ["Pelagic fish schools", "Demersal (bottom-dwelling) fish", "Marine mammals", "Coral reef fish"], answer: "Demersal (bottom-dwelling) fish" },
+                     { question: "In stock assessment, CPUE is an index of:", options: ["Fish abundance", "Total catch", "Fishing gear efficiency", "Fish size"], answer: "Fish abundance" },
+                     { question: "The Target Reference Point (TRP) in fisheries management is:", options: ["A level to be avoided", "The level of stock collapse", "A desirable level for the stock and fishery", "The level of maximum economic yield"], answer: "A desirable level for the stock and fishery" },
+                     { question: "An Otter trawl keeps its mouth open horizontally using:", options: ["A large beam", "Two vessels pulling the net", "Otter boards (trawl doors)", "Water pressure"], answer: "Otter boards (trawl doors)" },
+                     { question: "Which major fishing ground is located in the southernmost part of the Philippines, known for its high tuna productivity?", options: ["Lingayen Gulf", "Visayan Sea", "Babuyan Channel", "Moro Gulf"], answer: "Moro Gulf" },
+                     { question: "A fish corral or 'baklad' is an example of what type of fishing gear?", options: ["Line", "Barrier/Trap", "Net", "Hand Instrument"], answer: "Barrier/Trap" },
+                     { question: "The Thompson and Bell model is what type of stock assessment model?", options: ["Holistic/Surplus Production", "Analytical/Age-structured", "Ecosystem-based", "Economic"], answer: "Analytical/Age-structured" },
+                     { question: "Which physical property of seawater is a function of temperature, salinity, and pressure?", options: ["Viscosity", "Density", "Compressibility", "Refractive Index"], answer: "Density" },
+                     { question: "The Visayan Sea is considered one of the Philippines' most important fishing grounds, primarily for:", options: ["Tuna", "Sardines and small pelagics", "Groupers", "Seaweeds"], answer: "Sardines and small pelagics" },
+                     { question: "A Fish Aggregating Device (FAD) or 'payaos' works by:", options: ["Attracting fish with bait", "Creating an artificial shelter that attracts pelagic fish", "Entangling fish in its ropes", "Making sounds that lure fish"], answer: "Creating an artificial shelter that attracts pelagic fish" },
+                     { question: "What is the primary function of a 'codend' in a trawl net?", options: ["To keep the net open", "To scare fish into the net", "To collect and retain the catch", "To allow small fish to escape"], answer: "To collect and retain the catch" },
+                     { question: "The Coriolis effect, caused by the Earth's rotation, deflects moving objects (like ocean currents) to the ____ in the Northern Hemisphere.", options: ["Right", "Left", "East", "West"], answer: "Right" },
+                     { question: "RA 10654 amended which previous fisheries law?", options: ["RA 9147", "RA 8550", "RA 7160", "PD 704"], answer: "RA 8550" },
+                     { question: "The von Bertalanffy Growth Function (VBGF) is a model used to describe:", options: ["The growth of a fish population", "The growth of an individual fish in length or weight over time", "The economic growth of a fishery", "The reproductive cycle of a fish"], answer: "The growth of an individual fish in length or weight over time" },
+                     { question: "A 'Limit Reference Point' (LRP) in fisheries management represents a state of the stock that is:", options: ["Desirable and should be aimed for", "Considered dangerous and should be avoided", "The point of maximum economic yield", "Optimal for biodiversity"], answer: "Considered dangerous and should be avoided" },
+                     { question: "Longline fishing is a method that can have significant bycatch of:", options: ["Seabirds and sea turtles", "Small crustaceans", "Corals and sponges", "Jellyfish"], answer: "Seabirds and sea turtles" },
+                     { question: "An 'upwelling' is an oceanographic phenomenon where:", options: ["Warm surface water sinks", "Cold, nutrient-rich water from the deep rises to the surface", "Two ocean currents collide", "Freshwater from rivers enters the sea"], answer: "Cold, nutrient-rich water from the deep rises to the surface" },
+                     { question: "The 'municipal waters' of the Philippines extend from the coastline up to:", options: ["3 nautical miles", "12 nautical miles", "15 kilometers", "200 nautical miles"], answer: "15 kilometers" },
+                     { question: "What does the term 'bycatch' refer to?", options: ["The commercially valuable part of the catch", "Fish that are caught for recreational purposes", "The incidental capture of non-target species during fishing", "Fish that are processed at sea"], answer: "The incidental capture of non-target species during fishing" },
+                     { question: "A 'troll line' is a type of fishing gear that is:", options: ["Set stationary on the seabed", "Towed behind a moving vessel", "An entangling net", "A large encircling net"], answer: "Towed behind a moving vessel" },
+                     { question: "The Exclusive Economic Zone (EEZ) gives a coastal state sovereign rights to explore and exploit marine resources up to:", options: ["12 nautical miles from its coast", "24 nautical miles from its coast", "200 nautical miles from its coast", "The edge of the continental shelf"], answer: "200 nautical miles from its coast" },
+                     { question: "Otoliths, or 'ear stones' in fish, are often used by scientists to determine:", options: ["The's diet", "The fish's age and growth history", "The fish's sex", "The fish's migratory patterns"], answer: "The fish's age and growth history" },
+                     { question: "The term 'demersal' refers to fish that live:", options: ["Near the water surface (pelagic)", "In the middle of the water column", "At or near the bottom of the sea", "In coral reefs"], answer: "At or near the bottom of the sea" },
+                     { question: "Which international body is primarily responsible for the management of tuna and tuna-like species in the Western and Central Pacific Ocean?", options: ["FAO", "WCPFC", "IMO", "ASEAN"], answer: "WCPFC" },
+                     { question: "What is a 'thermocline'?", options: ["A layer of water with constant temperature", "A layer in a large body of water where temperature changes rapidly with depth", "A current of warm water", "A measure of the heat content of water"], answer: "A layer in a large body of water where temperature changes rapidly with depth" },
+                     { question: "The use of a 'Bycatch Reduction Device' (BRD) is an example of what kind of fisheries management approach?", options: ["Economic incentive", "Ecosystem-based management", "Quotas and limits", "Temporal closure"], answer: "Ecosystem-based management" },
+                     { question: "A 'stake net' or 'fishtrap' is a classic example of which gear type?", options: ["Active gear", "Passive gear", "Towed gear", "Hook and line"], answer: "Passive gear" },
+                     { question: "The 'selectivity' of a fishing gear refers to its ability to:", options: ["Catch a large quantity of fish", "Operate in deep water", "Target and capture fish of a certain size or species", "Withstand strong currents"], answer: "Target and capture fish of a certain size or species" },
+                     { question: "What type of weather is typically associated with a low-pressure area?", options: ["Clear skies and calm winds", "Cloudy, rainy, and windy conditions", "Cool and dry weather", "Foggy conditions"], answer: "Cloudy, rainy, and windy conditions" },
+                     { question: "The 'precautionary principle' in fisheries management suggests that:", options: ["Action should only be taken when there is absolute scientific certainty", "Fishing should be allowed until a stock shows signs of collapse", "Where there are threats of serious damage, lack of full scientific certainty shall not be used as a reason for postponing cost-effective measures to prevent environmental degradation", "Economic considerations should always come before conservation"], answer: "Where there are threats of serious damage, lack of full scientific certainty shall not be used as a reason for postponing cost-effective measures to prevent environmental degradation" },
+                     { question: "The 'ring net' used in the Philippines is a smaller version of which major fishing gear?", options: ["Trawl net", "Purse seine", "Gillnet", "Longline"], answer: "Purse seine" },
+                     { question: "Which of the following is a key characteristic of an El Niño event in the Pacific Ocean?", options: ["Unusually cold sea surface temperatures in the central and eastern Pacific", "Unusually warm sea surface temperatures in the central and eastern Pacific", "Increased upwelling along the coast of Peru", "Stronger than normal trade winds"], answer: "Unusually warm sea surface temperatures in the central and eastern Pacific" },
+                     { question: "The 'hanging ratio' of a gillnet affects its:", options: ["Color", "Strength", "Sinking speed", "Shape and efficiency in catching fish"], answer: "Shape and efficiency in catching fish" },
+                ]
+            },
+            "Fisheries Engineering": {
+                description: "Focuses on the technical design and construction of aquaculture facilities, fishing gears, and vessels.",
+                image: "https://images.unsplash.com/photo-1599282940259-e9842f190052?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                questions: [
+                    { question: "What is the primary purpose of a core trench in an earthen dike?", options: ["To create a pathway for fish", "To prevent seepage of water under the dike", "To anchor the dike to the ground", "To serve as a drainage canal"], answer: "To prevent seepage of water under the dike" },
+                    { question: "The recommended side slope for an earthen pond dike made of clay loam is typically:", options: ["1:1 (Vertical:Horizontal)", "1:5", "2:1 or 3:1", "1:10"], answer: "2:1 or 3:1" },
+                    { question: "Which instrument is used in surveying to measure horizontal and vertical angles?", options: ["Dumpy level", "Planimeter", "Theodolite/Transit", "Sextant"], answer: "Theodolite/Transit" },
+                    { question: "The height of a dike above the normal water level is known as:", options: ["Crown", "Freeboard", "Berm", "Side slope"], answer: "Freeboard" },
+                    { question: "In a fishpond, a sluice gate is primarily used for:", options: ["Aerating the pond water", "Controlling water intake and discharge", "Harvesting fish", "Feeding the fish stock"], answer: "Controlling water intake and discharge" },
+                    { question: "Which soil type is most desirable for constructing the bottom of a fishpond due to its water-holding capacity?", options: ["Sandy soil", "Gravel", "Clay or clay loam", "Peat soil"], answer: "Clay or clay loam" },
+                    { question: "The stability of a fishing vessel is indicated by its:", options: ["Gross tonnage", "Engine horsepower", "Metacentric height (GM)", "Overall length"], answer: "Metacentric height (GM)" },
+                    { question: "What is the function of otter boards or trawl doors in a trawl fishing gear?", options: ["To keep the net on the seabed", "To provide a horizontal opening for the net mouth", "To scare fish towards the net", "To serve as weight to sink the net"], answer: "To provide a horizontal opening for the net mouth" },
+                    { question: "The size of a net's mesh is properly measured as:", options: ["The diagonal length of the opening", "The length of one side of the mesh", "The length of the stretched mesh from knot to knot", "The circumference of the mesh opening"], answer: "The length of the stretched mesh from knot to knot" },
+                    { question: "Which material is most commonly used for making modern fishing nets due to its strength and durability?", options: ["Cotton", "Abaca", "Polyamide (Nylon)", "Jute"], answer: "Polyamide (Nylon)" },
+                    { question: "A pump that is ideal for moving large volumes of water at a low head, suitable for fishponds, is a/an:", options: ["Centrifugal pump", "Piston pump", "Axial flow pump", "Submersible pump"], answer: "Axial flow pump" },
+                    { question: "The principle that explains the buoyant force on a submerged object, critical for vessel design, is:", options: ["Bernoulli's Principle", "Pascal's Law", "Archimedes' Principle", "Newton's Third Law"], answer: "Archimedes' Principle" },
+                    { question: "In cage culture, a mooring system's main function is to:", options: ["Attract fish to the cage", "Hold the cage securely in its designated location", "Provide a framework for the net", "Facilitate automated feeding"], answer: "Hold the cage securely in its designated location" },
+                    { question: "The term 'Tex system' in relation to netting materials is a unit used to measure:", options: ["Twine strength", "Twine linear density (mass per unit length)", "Mesh size", "Netting color fastness"], answer: "Twine linear density (mass per unit length)" },
+                    { question: "What is the primary function of a bulbous bow on a large vessel?", options: ["To increase cargo space", "To improve maneuverability at low speeds", "To reduce wave-making resistance and improve fuel efficiency", "To protect against collisions"], answer: "To reduce wave-making resistance and improve fuel efficiency" },
+                    { question: "The process of joining two pieces of netting or repairing a hole in a net is called:", options: ["Mending", "Hanging", "Splicing", "Weaving"], answer: "Mending" },
+                    { question: "Which of these is NOT a primary component of a vapor-compression refrigeration system used on fishing vessels?", options: ["Compressor", "Condenser", "Generator", "Evaporator"], answer: "Generator" },
+                    { question: "The 'hanging ratio' (E) in a gillnet determines:", options: ["The strength of the floatline", "The sinking speed of the net", "The looseness or shape of the meshes, affecting capture efficiency", "The overall length of the net"], answer: "The looseness or shape of the meshes, affecting capture efficiency" },
+                    { question: "HDPE, a material increasingly used for modern fish cage frames and pipes, stands for:", options: ["High Density Polycarbonate Ester", "Heavy Duty Plastic Element", "High Density Polyethylene", "Highly Durable PVC Elastomer"], answer: "High Density Polyethylene" },
+                    { question: "The main water control structure in a large fish farm, regulating flow for the entire system, is often called the:", options: ["Tertiary gate", "Canal gate", "Main gate", "Secondary gate"], answer: "Main gate" }
+                ]
+            },
+            "Aquatic Resources and Ecology": {
+                description: "Explore the study of aquatic ecosystems and their inhabitants.",
+                image: "https://images.unsplash.com/photo-1551843073-4a9a7a6f9de7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                 questions: [
+                    { question: "What is the term for the zone that receives enough sunlight for photosynthesis?", options: ["Aphotic zone", "Benthic zone", "Photic zone", "Abyssal zone"], answer: "Photic zone" },
+                    { question: "An estuary is a habitat characterized by:", options: ["High wave action", "Stable high salinity", "The mixing of freshwater and saltwater", "Deep, cold conditions"], answer: "The mixing of freshwater and saltwater" },
+                    { question: "Which is a primary function of mangrove forests?", options: ["Source of silica for diatoms", "Serving as a nursery ground for many species", "Substrate for coral attachment", "Main source of open ocean productivity"], answer: "Serving as a nursery ground for many species" },
+                    { question: "Coral reefs require which of the following for optimal growth?", options: ["High nutrient levels", "Low salinity and cold temperatures", "Clear, warm, and shallow water", "Soft, muddy bottoms"], answer: "Clear, warm, and shallow water" },
+                    { question: "The study of freshwater ecosystems like lakes and streams is called:", options: ["Oceanography", "Limnology", "Potamology", "Estuarine ecology"], answer: "Limnology" },
+                    { question: "The study of groups of organisms in relation to their environment is known as:", options: ["Autecology", "Synecology", "Taxonomy", "Physiology"], answer: "Synecology" },
+                    { question: "In an aquatic food web, organisms that feed on dead organic matter (detritus) are called:", options: ["Producers", "Herbivores", "Carnivores", "Detritivores"], answer: "Detritivores" },
+                    { question: "Primary productivity in aquatic ecosystems is the rate at which energy is converted by ____ organisms into organic substances.", options: ["Heterotrophic", "Autotrophic", "Decomposing", "Parasitic"], answer: "Autotrophic" },
+                    { question: "Species richness, a component of biodiversity, refers to:", options: ["The total number of individuals in a community", "The relative abundance of different species", "The number of different species in an area", "The genetic variation within a species"], answer: "The number of different species in an area" },
+                    { question: "The River Continuum Concept describes how the physical and biological characteristics of a stream change from:", options: ["Season to season", "Headwaters to mouth", "Surface to bottom", "Day to night"], answer: "Headwaters to mouth" },
+                    { question: "Ichthyology is the branch of zoology devoted to the study of:", options: ["Crustaceans", "Molluscs", "Fish", "Marine mammals"], answer: "Fish" },
+                    { question: "The scientific class for bony fishes is:", options: ["Chondrichthyes", "Agnatha", "Actinopterygii", "Cephalopoda"], answer: "Actinopterygii" },
+                    { question: "Meristic counts in fish taxonomy refer to:", options: ["Measurements of body proportions", "Counts of serial parts like fins rays and scales", "The color pattern of the fish", "The internal anatomy of the fish"], answer: "Counts of serial parts like fins rays and scales" },
+                    { question: "Shrimps, crabs, and lobsters belong to which major aquatic group?", options: ["Mollusca", "Echinodermata", "Cnidaria", "Crustacea"], answer: "Crustacea" },
+                    { question: "Cephalopods, such as squids and octopuses, are part of which phylum?", options: ["Arthropoda", "Mollusca", "Annelida", "Chordata"], answer: "Mollusca" },
+                    { question: "A species that is not native to an ecosystem and whose introduction causes or is likely to cause harm is called an:", options: ["Endemic species", "Introduced species", "Invasive species", "Native species"], answer: "Invasive species" },
+                    { question: "Eutrophication in a body of water is characterized by:", options: ["An increase in heavy metals", "A decrease in temperature", "Nutrient enrichment leading to algal blooms", "An increase in salinity"], answer: "Nutrient enrichment leading to algal blooms" },
+                    { question: "The Ramsar Convention is an international treaty for the conservation and sustainable use of:", options: ["Coral Reefs", "Wetlands", "Mangrove Forests", "Endangered Marine Species"], answer: "Wetlands" },
+                    { question: "The Ecosystem Approach to Fisheries Management (EAFM) considers the interactions between:", options: ["Only the target fish species and the fishing gear", "Economic and social factors only", "Biotic, abiotic, and human components of the ecosystem", "Only endangered and threatened species"], answer: "Biotic, abiotic, and human components of the ecosystem" },
+                    { question: "Which of the following is NOT considered a non-living aquatic resource?", options: ["Manganese nodules", "Seaweeds", "Offshore oil and gas", "Polymetallic sulfides"], answer: "Seaweeds" },
+                    { question: "The Manta Tow Method is used for rapid assessment of:", options: ["Seagrass percentage cover", "Mangrove regeneration", "Benthic lifeforms and coral cover over large areas", "Fish population density"], answer: "Benthic lifeforms and coral cover over large areas" },
+                    { question: "Organisms that can tolerate a wide range of salinities are described as:", options: ["Stenohaline", "Euryhaline", "Stenothermal", "Eurythermal"], answer: "Euryhaline" },
+                    { question: "Blue Carbon refers to the carbon captured and stored by:", options: ["Open ocean phytoplankton", "Coastal and marine ecosystems like mangroves and seagrass beds", "Freshwater algae", "Volcanic vents on the seafloor"], answer: "Coastal and marine ecosystems like mangroves and seagrass beds" },
+                    { question: "Which of these is a major threat to coral reefs?", options: ["Low light intensity", "Ocean acidification", "Stable sea levels", "Low sea surface temperatures"], answer: "Ocean acidification" },
+                    { question: "CITES is an international agreement aimed at ensuring that international trade in specimens of wild animals and plants:", options: ["Is maximized for economic benefit", "Does not threaten their survival", "Is limited to non-endangered species", "Is controlled by a single global body"], answer: "Does not threaten their survival" },
+                    { question: "Republic Act 8550 is also known as:", options: ["The Philippine Fisheries Code of 1998", "The Clean Water Act", "The Wildlife Resources Conservation and Protection Act", "The National Integrated Protected Areas System Act"], answer: "The Philippine Fisheries Code of 1998" },
+                    { question: "The term 'benthos' refers to organisms that live:", options: ["On or in the bottom of a body of water", "Suspended in the water column", "At the water surface", "As parasites on other organisms"], answer: "On or in the bottom of a body of water" },
+                    { question: "Which habitat is often referred to as a 'rainforest of the sea' due to its high biodiversity?", options: ["Mangrove forest", "Seagrass bed", "Coral reef", "Kelp forest"], answer: "Coral reef" },
+                    { question: "The process of coral bleaching occurs when:", options: ["Corals expel their symbiotic zooxanthellae due to stress", "A disease causes the coral tissue to turn white", "Sediment covers the coral", "The coral reproduces"], answer: "Corals expel their symbiotic zooxanthellae due to stress" },
+                    { question: "What is the term for an organism's specific functional role in an ecosystem?", options: ["Habitat", "Niche", "Trophic level", "Community"], answer: "Niche" },
+                    { question: "Bioaccumulation is the process by which a substance, such as a toxin, builds up in:", options: ["A single organism over its lifetime", "The environment over time", "Higher trophic levels of a food chain", "The water column"], answer: "A single organism over its lifetime" },
+                    { question: "The Class Chondrichthyes includes which group of fish?", options: ["Bony fishes like tilapia and tuna", "Cartilaginous fishes like sharks and rays", "Jawless fishes like lampreys", "Lobe-finned fishes like coelacanths"], answer: "Cartilaginous fishes like sharks and rays" },
+                    { question: "What are 'phytoplankton'?", options: ["Microscopic marine animals", "Microscopic marine plants (algae)", "The larval stage of fish", "Marine bacteria"], answer: "Microscopic marine plants (algae)" },
+                    { question: "A Marine Protected Area (MPA) is an area of the sea established to:", options: ["Promote commercial fishing", "Conserve biodiversity and marine resources", "Serve as a shipping lane", "Allow for offshore oil exploration"], answer: "Conserve biodiversity and marine resources" },
+                    { question: "The 'compensation depth' in an aquatic system is the depth at which:", options: ["Photosynthesis equals respiration", "Sunlight no longer penetrates", "The temperature is lowest", "The pressure is highest"], answer: "Photosynthesis equals respiration" },
+                    { question: "What is the primary component of a mollusc's shell?", options: ["Chitin", "Cellulose", "Calcium Carbonate", "Silica"], answer: "Calcium Carbonate" },
+                    { question: "Which of the following is an example of a 'keystone species' in a marine environment?", options: ["Sea otter", "Phytoplankton", "Sardine", "Barnacle"], answer: "Sea otter" },
+                    { question: "RA 9147, the Wildlife Resources Conservation and Protection Act, aims to:", options: ["Regulate the sale of all fish products", "Conserve and protect wildlife species and their habitats", "Manage municipal water use", "Establish fishing seasons"], answer: "Conserve and protect wildlife species and their habitats" },
+                    { question: "The term 'nekton' refers to:", options: ["Organisms that drift with the currents (plankton)", "Organisms living on the bottom (benthos)", "Actively swimming aquatic organisms", "Microscopic organisms"], answer: "Actively swimming aquatic organisms" },
+                    { question: "What type of relationship exists between clownfish and sea anemones?", options: ["Parasitism", "Commensalism", "Mutualism", "Predation"], answer: "Mutualism" },
+                    { question: "The increase in concentration of a toxin at successive trophic levels in a food web is called:", options: ["Bioaccumulation", "Biomagnification", "Bioturbation", "Biodegradation"], answer: "Biomagnification" },
+                    { question: "Which zone of a lake is the open water area away from the shore?", options: ["Littoral zone", "Limnetic zone", "Profundal zone", "Benthic zone"], answer: "Limnetic zone" },
+                    { question: "Giant clams (Tridacna spp.) are a protected species because they are:", options: ["Highly poisonous", "Invasive and harm other species", "Vulnerable to over-harvesting and play a role in reef health", "A major predator in the ecosystem"], answer: "Vulnerable to over-harvesting and play a role in reef health" },
+                    { question: "The 'shellfish' category includes which two major phyla?", options: ["Arthropoda (Crustaceans) and Mollusca", "Mollusca and Echinodermata", "Chordata and Annelida", "Cnidaria and Porifera"], answer: "Arthropoda (Crustaceans) and Mollusca" },
+                    { question: "What is the main purpose of a fish ladder or fishway?", options: ["To help scientists count fish", "To allow migratory fish to bypass dams or other obstructions", "To catch fish for stocking", "To aerate the water"], answer: "To allow migratory fish to bypass dams or other obstructions" },
+                    { question: "Red Tides are harmful algal blooms most often caused by which group of phytoplankton?", options: ["Diatoms", "Green algae", "Dinoflagellates", "Cyanobacteria"], answer: "Dinoflagellates" },
+                    { question: "An 'endemic' species is one that is:", options: ["Found in many different parts of the world", "Found only in a specific geographic area", "Introduced from another country", "Considered a pest"], answer: "Found only in a specific geographic area" },
+                    { question: "The swim bladder in bony fish is primarily used for:", options: ["Digestion", "Buoyancy control", "Reproduction", "Sensing vibrations"], answer: "Buoyancy control" },
+                    { question: "Which of these is a major ecological role of seagrass beds?", options: ["Stabilizing sediments and providing a nursery for juvenile fish", "Creating deep ocean trenches", "Serving as the primary food for sharks", "Reflecting sunlight to cool the water"], answer: "Stabilizing sediments and providing a nursery for juvenile fish" },
+                ]
+            },
+            "Post-Harvest Technology": {
+                description: "Understand the processing, preservation, and handling of fish products.",
+                image: "https://images.unsplash.com/photo-1597799279436-94233ac3c7a8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                questions: [
+                    { question: "What is the primary purpose of icing fish immediately after capture?", options: ["To improve its flavor", "To slow down spoilage", "To wash away bacteria", "To make the flesh firmer"], answer: "To slow down spoilage" },
+                    { question: "Organoleptic assessment of fish quality relies on:", options: ["Chemical analysis", "Microbiological culture", "Human senses", "Measuring pH"], answer: "Human senses" },
+                    { question: "Trimethylamine (TMA) in high levels indicates:", options: ["Freshness in marine fish", "The beginning of spoilage in marine fish", "The fat content of the fish", "The presence of parasites"], answer: "The beginning of spoilage in marine fish" },
+                    { question: "What does HACCP stand for?", options: ["Hazard And Critical Control Procedures", "Hazard Analysis Critical Control Point", "Healthy And Clean Canned Products", "Handling And Care of Chilled Products"], answer: "Hazard Analysis Critical Control Point" },
+                    { question: "Surimi is best described as:", options: ["Dried fish powder", "A fermented fish paste", "Minced, washed, and stabilized fish flesh", "Salted and dried fish roe"], answer: "Minced, washed, and stabilized fish flesh" },
+                    { question: "Which of the following is a physical method of quality assessment?", options: ["Measuring TVBN", "Testing for Indole", "Assessing flesh elasticity by touch", "Counting bacteria colonies"], answer: "Assessing flesh elasticity by touch" },
+                    { question: "High perishability of fish is primarily due to its:", options: ["Low fat content", "Tough muscle structure", "High water content and neutral pH", "Thick, protective scales"], answer: "High water content and neutral pH" },
+                    { question: "Which of the following is considered a prerequisite program that must be in place before implementing HACCP?", options: ["The seven HACCP principles", "A product recall plan", "Sanitation Standard Operating Procedures (SSOP)", "A marketing strategy"], answer: "Sanitation Standard Operating Procedures (SSOP)" },
+                    { question: "In the seven principles of HACCP, what is the first step?", options: ["Establish critical limits", "Conduct a hazard analysis", "Determine Critical Control Points (CCPs)", "Establish monitoring procedures"], answer: "Conduct a hazard analysis" },
+                    { question: "A Critical Control Point (CCP) is a step at which:", options: ["A food hazard can be prevented, eliminated, or reduced to acceptable levels", "The product is packaged", "The final product is inspected", "Workers must wash their hands"], answer: "A food hazard can be prevented, eliminated, or reduced to acceptable levels" },
+                    { question: "To prevent cross-contamination, which material is generally AVOIDED for food contact surfaces like cutting boards?", options: ["Stainless steel", "Plastic", "Wood", "HDPE"], answer: "Wood" },
+                    { question: "The primary principle of canning as a preservation method is the application of:", options: ["High pressure and low temperature", "High temperature to destroy microorganisms and enzymes", "Salt to dehydrate the product", "Smoke to inhibit bacterial growth"], answer: "High temperature to destroy microorganisms and enzymes" },
+                    { question: "In fish drying, the 'falling rate period' is when:", options: ["The fish gains moisture from the air", "Drying is fastest due to surface water evaporation", "Moisture removal from the interior of the fish becomes the limiting factor", "The fish is first placed in the dryer"], answer: "Moisture removal from the interior of the fish becomes the limiting factor" },
+                    { question: "Botulism, a serious foodborne illness, is a risk in improperly processed canned goods because the causative bacterium, Clostridium botulinum, is:", options: ["Aerobic and heat-resistant", "Anaerobic and produces heat-resistant spores", "A virus that thrives in acidic conditions", "A mold that grows on the surface"], answer: "Anaerobic and produces heat-resistant spores" },
+                    { question: "What is the role of sugar in some curing mixtures for fish?", options: ["It acts as a primary preservative", "It counteracts the harshness of salt and provides energy for beneficial bacteria in fermentation", "It bleaches the fish flesh", "It accelerates spoilage"], answer: "It counteracts the harshness of salt and provides energy for beneficial bacteria in fermentation" },
+                    { question: "High Pressure Processing (HPP) is a modern technique that preserves food by:", options: ["Using heat", "Using intense light", "Inactivating pathogens with high hydrostatic pressure", "Drying the product with compressed air"], answer: "Inactivating pathogens with high hydrostatic pressure" },
+                    { question: "Cryoprotectants like sorbitol and sucrose are added to surimi to:", options: ["Improve the color", "Prevent texture damage during freezing", "Increase the saltiness", "Speed up the gelling process"], answer: "Prevent texture damage during freezing" },
+                    { question: "Carrageenan is a phycocolloid extracted from which type of aquatic resource?", options: ["Fish skin", "Seaweeds", "Shrimp shells", "Oyster shells"], answer: "Seaweeds" },
+                    { question: "Squalene is a valuable oil that can be extracted as a by-product from shark:", options: ["Fins", "Teeth", "Liver", "Skin"], answer: "Liver" },
+                    { question: "The 9-point Hedonic scale is commonly used in which type of sensory evaluation?", options: ["Descriptive analysis by a trained panel", "Difference testing", "Acceptance/Preference testing by consumers", "Quality grading"], answer: "Acceptance/Preference testing by consumers" },
+                    { question: "Proximate analysis of fish flesh determines its content of:", options: ["Vitamins and minerals", "Heavy metals", "Spoilage bacteria", "Protein, fat, moisture, and ash"], answer: "Protein, fat, moisture, and ash" },
+                    { question: "The K-value is a biochemical test for fish freshness that measures the ratio of:", options: ["TMAO to TMA", "ATP degradation products", "Free fatty acids", "Histamine levels"], answer: "ATP degradation products" },
+                    { question: "What is the primary objective of Good Hygienic Practices (GHP) in a food processing plant?", options: ["To ensure maximum production output", "To minimize operational costs", "To ensure food safety and wholesomeness", "To train employees in marketing"], answer: "To ensure food safety and wholesomeness" },
+                    { question: "Which of the following is NOT one of the seven HACCP principles?", options: ["Establish corrective actions", "Determine CCPs", "Zero-defect product policy", "Establish record-keeping and documentation procedures"], answer: "Zero-defect product policy" },
+                    { question: "The purpose of post-processing cooling in canning is to:", options: ["Allow the cans to be labeled immediately", "Prevent germination of thermophilic (heat-loving) bacterial spores", "Improve the flavor of the product", "Reduce the internal pressure of the can"], answer: "Prevent germination of thermophilic (heat-loving) bacterial spores" },
+                    { question: "The Universal Product Code (UPC) is a barcode system used for what primary purpose in the food industry?", options: ["Sensory scoring", "Nutritional labeling", "Tracking products and sales", "Indicating freshness"], answer: "Tracking products and sales" },
+                    { question: "Rigor mortis in fish is the stage after death characterized by:", options: ["Softening of the muscle", "The flesh becoming stiff and inflexible", "The onset of microbial spoilage", "The gills turning brown"], answer: "The flesh becoming stiff and inflexible" },
+                    { question: "The process of 'glazing' frozen fish involves applying a thin layer of ice to:", options: ["Improve its appearance", "Protect the fish from dehydration and oxidation", "Make it weigh more", "Speed up the freezing process"], answer: "Protect the fish from dehydration and oxidation" },
+                    { question: "Histamine or 'scombroid' poisoning is a foodborne illness associated with the consumption of spoiled:", options: ["Shrimp and crabs", "Tuna, mackerel, and other dark-fleshed fish", "Catfish and tilapia", "Oysters and mussels"], answer: "Tuna, mackerel, and other dark-fleshed fish" },
+                    { question: "The principal spoilage agents in fresh fish are:", options: ["Yeasts and molds", "Viruses", "Bacteria", "Enzymes only"], answer: "Bacteria" },
+                    { question: "What is the primary purpose of 'bleeding' fish immediately after capture?", options: ["To reduce its weight", "To improve the appearance and keeping quality of the flesh", "To comply with export regulations", "To make the fish easier to scale"], answer: "To improve the appearance and keeping quality of the flesh" },
+                    { question: "In fish smoking, 'cold smoking' is done at a temperature that:", options: ["Cooks the fish completely", "Is high enough to kill all bacteria", "Is not high enough to cook the fish, typically below 30°C", "Is above the boiling point of water"], answer: "Is not high enough to cook the fish, typically below 30°C" },
+                    { question: "The water activity (aw) of a food product is a measure of:", options: ["Its total moisture content", "Its pH level", "The availability of water for microbial growth", "Its caloric content"], answer: "The availability of water for microbial growth" },
+                    { question: "Which of these is a common chemical preservative used in some fish products?", options: ["Formalin", "Sodium benzoate", "Chlorine", "Ammonia"], answer: "Sodium benzoate" },
+                    { question: "The process of 'evisceration' in fish processing refers to the removal of:", options: ["Scales and fins", "The head", "Internal organs", "Bones"], answer: "Internal organs" },
+                    { question: "IQF stands for:", options: ["Individually Quick Frozen", "Internal Quality Factor", "Internationally Qualified Fishery", "Important Quality Feature"], answer: "Individually Quick Frozen" },
+                    { question: "In making fermented fish products like 'bagoong', salt is used to:", options: ["Bleach the product", "Control the growth of spoilage bacteria while allowing beneficial fermenting bacteria to thrive", "Add a sweet flavor", "Soften the fish bones"], answer: "Control the growth of spoilage bacteria while allowing beneficial fermenting bacteria to thrive" },
+                    { question: "Which packaging method involves removing air from the package prior to sealing?", options: ["Modified Atmosphere Packaging (MAP)", "Vacuum packaging", "Active packaging", "Overwrapping"], answer: "Vacuum packaging" },
+                    { question: "Autolysis, one of the first stages of spoilage, is caused by:", options: ["Bacteria from the environment", "The fish's own digestive enzymes breaking down its tissues", "Contamination from handling", "Oxidation of fats"], answer: "The fish's own digestive enzymes breaking down its tissues" },
+                    { question: "A 'thermal process' in canning is designed to achieve:", options: ["A specific level of saltiness", "Commercial sterility", "A desired color", "Rapid freezing"], answer: "Commercial sterility" },
+                    { question: "Which of the following would be considered a 'value-added' fishery product?", options: ["Fresh whole tilapia", "Frozen fish fillets in marinade", "Dried anchovies", "Iced whole tuna"], answer: "Frozen fish fillets in marinade" },
+                    { question: "The Torrymeter is an instrument used to assess fish freshness by measuring:", options: ["pH", "Bacterial count", "Changes in the electrical properties of the skin and muscle", "Temperature"], answer: "Changes in the electrical properties of the skin and muscle" },
+                    { question: "GMP or Good Manufacturing Practices are guidelines that cover:", options: ["Only the final product testing", "The entire aspect of production, from raw materials to finished goods", "Only marketing and sales", "Only employee salaries"], answer: "The entire aspect of production, from raw materials to finished goods" },
+                    { question: "The term 'shelf life' refers to the period during which a food product:", options: ["Is being manufactured", "Remains safe to eat and retains its desired sensory and chemical characteristics", "Is on sale at a discounted price", "Is stored in the freezer"], answer: "Remains safe to eat and retains its desired sensory and chemical characteristics" },
+                    { question: "Chitin and its derivative chitosan are valuable by-products extracted from:", options: ["Fish scales", "Seaweed", "Crustacean shells (e.g., shrimp, crab)", "Oyster pearls"], answer: "Crustacean shells (e.g., shrimp, crab)" },
+                    { question: "The 'double seaming' process is critical for ensuring the integrity of what type of packaging?", options: ["Plastic bags", "Styrofoam boxes", "Metal cans", "Glass jars"], answer: "Metal cans" },
+                    { question: "What is the main spoilage concern for fatty fish like mackerel and sardines?", options: ["Bacterial putrefaction", "Rancidity (oxidation of fats)", "Mold growth", "Dehydration"], answer: "Rancidity (oxidation of fats)" },
+                    { question: "In HACCP, 'verification' refers to the activities that:", options: ["Monitor a CCP", "Determine if the HACCP plan is working correctly", "Establish critical limits", "Document the process"], answer: "Determine if the HACCP plan is working correctly" },
+                    { question: "The Philippine National Standard (PNS) for fisheries products is developed and implemented by which agency?", options: ["BFAR", "FDA", "DOST", "DTI - Bureau of Product Standards"], answer: "DTI - Bureau of Product Standards" },
+                ]
+            },
+            "Fisheries Laws and Economics": {
+                description: "Understand the legal frameworks, policies, and economic principles governing fisheries.",
+                image: "https://images.unsplash.com/photo-1582869423236-7dc6441e6c38?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80",
+                questions: [
+                    { question: "Republic Act 8550 is also known as:", options: ["The Philippine Fisheries Code of 1998", "The Clean Water Act", "The Wildlife Protection Act", "The Agriculture and Fisheries Modernization Act"], answer: "The Philippine Fisheries Code of 1998" },
+                    { question: "RA 10654, which amended RA 8550, is primarily aimed at:", options: ["Promoting aquaculture exports", "Deterring and preventing illegal, unreported, and unregulated (IUU) fishing", "Establishing more marine protected areas", "Providing subsidies to municipal fishers"], answer: "Deterring and preventing illegal, unreported, and unregulated (IUU) fishing" },
+                    { question: "Under the Fisheries Code, municipal waters extend up to how many kilometers from the general coastline?", options: ["10 km", "12 km", "15 km", "20 km"], answer: "15 km" },
+                    { question: "Which government agency is the primary body for the management and development of Philippine fisheries?", options: ["Department of Environment and Natural Resources (DENR)", "Department of Agriculture (DA)", "Bureau of Fisheries and Aquatic Resources (BFAR)", "Philippine Coast Guard (PCG)"], answer: "Bureau of Fisheries and Aquatic Resources (BFAR)" },
+                    { question: "The concept of 'Maximum Economic Yield' (MEY) in fisheries aims to maximize the:", options: ["Total weight of the catch", "Number of fishers employed", "Difference between total revenue and total costs of fishing", "Market price of fish"], answer: "Difference between total revenue and total costs of fishing" },
+                    { question: "What does UNCLOS stand for in the context of international maritime law?", options: ["United Nations Charter on Law of the Oceans", "United Nations Convention on the Law of the Sea", "Universal Navigation and Coastal Law of States", "United Nations Commission on Oceanic Law and Sovereignty"], answer: "United Nations Convention on the Law of the Sea" },
+                    { question: "A fishing license is a permit required to:", options: ["Operate a commercial fishing vessel", "Engage in recreational fishing", "Sell fish in a public market", "Culture fish in a pond"], answer: "Operate a commercial fishing vessel" },
+                    { question: "The main purpose of a 'closed season' as a fisheries management tool is to:", options: ["Allow fish prices to increase", "Let fishing vessels undergo repair", "Protect fish during their critical spawning period", "Reduce competition among fishers"], answer: "Protect fish during their critical spawning period" },
+                    { question: "The 'Tragedy of the Commons' in fisheries refers to the problem of:", options: ["Pollution in fishing grounds", "Overexploitation of open-access resources", "Conflicts between fishers", "Fluctuating fish prices"], answer: "Overexploitation of open-access resources" },
+                    { question: "Which of the following is an example of a market-based instrument for fisheries management?", options: ["Closed seasons", "Gear restrictions", "Individual Transferable Quotas (ITQs)", "Marine Protected Areas (MPAs)"], answer: "Individual Transferable Quotas (ITQs)" },
+                    { question: "What is the primary role of a Fisheries and Aquatic Resource Management Council (FARMC)?", options: ["To conduct scientific research", "To provide assistance and advice to the LGU and BFAR on fishery matters", "To enforce fisheries laws directly", "To set the national fishing policy"], answer: "To provide assistance and advice to the LGU and BFAR on fishery matters" },
+                    { question: "In economics, 'elasticity of demand' for fish means that a small change in price leads to:", options: ["No change in quantity demanded", "A small change in quantity demanded", "A proportionally large change in quantity demanded", "The price returning to its original level"], answer: "A proportionally large change in quantity demanded" },
+                    { question: "A 'tariff' on imported fish products is a:", options: ["Quota on the amount that can be imported", "Tax on imported goods", "Subsidy for local producers", "Ban on imports"], answer: "Tax on imported goods" },
+                    { question: "The 'Exclusive Economic Zone' (EEZ) grants a coastal state sovereign rights for exploring, exploiting, conserving and managing natural resources up to:", options: ["12 nautical miles from shore", "24 nautical miles from shore", "200 nautical miles from shore", "The edge of the continental shelf"], answer: "200 nautical miles from shore" },
+                    { question: "What is 'opportunity cost' in the context of a fisher choosing to go fishing?", options: ["The cost of fuel and bait", "The potential income they gave up by not doing another job that day", "The market price of the fish they catch", "The license fee for the fishing boat"], answer: "The potential income they gave up by not doing another job that day" },
+                    { question: "Which of the following is considered an illegal act of fishing under Philippine law?", options: ["Using a hook and line in municipal waters", "Using dynamite to catch fish", "Operating a fish pond without a permit", "Trawling in international waters"], answer: "Using dynamite to catch fish" },
+                    { question: "The 'value chain' in the fisheries industry includes all activities that:", options: ["Occur only at sea during fishing", "Are related to post-harvest processing only", "Add value to a product from production to consumption", "Are regulated by the government"], answer: "Add value to a product from production to consumption" },
+                    { question: "Under RA 10654, observers must be placed on all commercial fishing vessels fishing in:", options: ["Municipal waters", "The high seas", "Bays and gulfs", "Rivers and lakes"], answer: "The high seas" },
+                    { question: "A 'monopsony' in a fish landing center means there is/are:", options: ["Many sellers and many buyers", "A single seller", "A single buyer", "A government-controlled price"], answer: "A single buyer" },
+                    { question: "Presidential Decree 704 is known as the:", options: ["Fisheries Decree of 1975", "Amended Fisheries Code", "Wildlife Act", "Clean Water Act"], answer: "Fisheries Decree of 1975" },
+                    { question: "The purpose of a 'traceability' system in the seafood industry is to:", options: ["Determine the age of the fish", "Track the product through all stages of production, processing and distribution", "Set the price of the fish", "Analyze the nutritional content of the fish"], answer: "Track the product through all stages of production, processing and distribution" },
+                    { question: "Which international agreement is a 'soft law' instrument that sets out principles for responsible fisheries?", options: ["UNCLOS", "CITES", "The FAO Code of Conduct for Responsible Fisheries", "The Ramsar Convention"], answer: "The FAO Code of Conduct for Responsible Fisheries" },
+                    { question: "The 'open access' nature of many capture fisheries often leads to:", options: ["High profitability for all", "Sustainable harvesting", "Resource depletion and economic inefficiency", "Stable fish populations"], answer: "Resource depletion and economic inefficiency" },
+                    { question: "Which of these is NOT a primary role of the Bureau of Fisheries and Aquatic Resources (BFAR)?", options: ["Issue commercial fishing licenses", "Promulgate fisheries administrative orders", "Set market prices for fish", "Provide technical assistance to fishers"], answer: "Set market prices for fish" },
+                    { question: "The Local Government Code (RA 7160) devolved certain fisheries management functions to:", options: ["National government agencies", "Local government units (LGUs)", "Non-governmental organizations (NGOs)", "The private sector"], answer: "Local government units (LGUs)" },
+                    { question: "In cost-benefit analysis of a fisheries project, a 'benefit' would be:", options: ["Cost of boat construction", "Increased income for fishers", "Salaries of project staff", "Cost of fuel"], answer: "Increased income for fishers" },
+                    { question: "The concept of 'fishing effort' refers to:", options: ["The total catch of a vessel", "The amount of time and resources (vessel, gear, labor) used in fishing", "The number of fishers in a community", "The price of fish per kilogram"], answer: "The amount of time and resources (vessel, gear, labor) used in fishing" },
+                    { question: "A 'fishery cooperative' is an organization owned and controlled by:", options: ["The government", "A private corporation", "Its members, the fishers themselves", "A foreign investor"], answer: "Its members, the fishers themselves" },
+                    { question: "What is the primary objective of CITES (Convention on International Trade in Endangered Species)?", options: ["To promote free trade of all species", "To ensure that international trade does not threaten the survival of wild animals and plants", "To fund captive breeding programs", "To regulate domestic trade in wildlife"], answer: "To ensure that international trade does not threaten the survival of wild animals and plants" },
+                    { question: "The 'port state measures agreement' is an international treaty aimed at combating:", options: ["Overfishing in general", "IUU fishing by preventing vessels from using ports to land their catches", "Pollution from fishing vessels", "Bycatch of marine mammals"], answer: "IUU fishing by preventing vessels from using ports to land their catches" },
+                    { question: "A 'public good' in fisheries, like a lighthouse, is characterized by being:", options: ["Non-excludable and non-rivalrous", "Excludable and rivalrous", "Available only to those who pay", "Produced only by the government"], answer: "Non-excludable and non-rivalrous" },
+                    { question: "What does the term 'IUU' fishing stand for?", options: ["Internal, Unregulated, and Unlawful", "Illegal, Unreported, and Unregulated", "International, Unrecorded, and Unlawful", "Inshore, Unreported, and Unlicensed"], answer: "Illegal, Unreported, and Unregulated" },
+                    { question: "Which government body in the Philippines has jurisdiction over cases involving violations of the Fisheries Code?", options: ["Regular courts (MTC, RTC)", "The Coast Guard", "BFAR Adjudication Committee", "The DENR"], answer: "Regular courts (MTC, RTC)" },
+                    { question: "The 'precautionary approach' in fisheries management, as stated in the Code, means that:", options: ["Fishing should be stopped if there is any uncertainty", "Action should be taken to protect the resource even in the absence of full scientific certainty", "Economic goals always outweigh conservation goals", "Management decisions must wait for conclusive scientific evidence"], answer: "Action should be taken to protect the resource even in the absence of full scientific certainty" },
+                    { question: "A 'subsidy' in fisheries could be:", options: ["A tax on fishing gear", "A government payment to support the fishing industry, like fuel subsidies", "A fee for a fishing license", "A fine for illegal fishing"], answer: "A government payment to support the fishing industry, like fuel subsidies" },
+                    { question: "The 'supply curve' for fish shows the relationship between:", options: ["Price and quantity demanded", "Price and quantity supplied", "Income and demand", "Cost and production"], answer: "Price and quantity supplied" },
+                    { question: "An 'ad valorem' penalty under the amended Fisheries Code is based on:", options: ["A fixed amount per violation", "The length of the vessel", "The value of the catch", "The horsepower of the engine"], answer: "The value of the catch" },
+                    { question: "The main economic problem that rights-based fisheries management (like ITQs) tries to solve is:", options: ["The tragedy of the commons", "High prices of fish", "Lack of fishing technology", "Pollution"], answer: "The tragedy of the commons" },
+                    { question: "What is the 'closed access' principle in fisheries management?", options: ["The fishing ground is open to everyone", "The number of fishers or vessels allowed to fish is limited", "Fishing is not allowed at any time", "Only foreign vessels can fish"], answer: "The number of fishers or vessels allowed to fish is limited" },
+                    { question: "BFAR Fisheries Administrative Orders (FAOs) serve as:", options: ["The main fisheries law itself", "Implementing rules and regulations for the Fisheries Code", "Suggestions for local ordinances", "International treaties"], answer: "Implementing rules and regulations for the Fisheries Code" },
+                    { question: "The concept of 'food security' as it relates to fisheries means:", options: ["All fish caught must be exported", "Ensuring all people have access to sufficient, safe, and nutritious fish", "Protecting fish from predators", "Storing fish for long periods"], answer: "Ensuring all people have access to sufficient, safe, and nutritious fish" },
+                    { question: "Which of the following is an example of a 'non-market value' of a coastal ecosystem?", options: ["Revenue from tourism", "Price of fish caught", "Coastal protection function of mangroves", "Cost of building a seawall"], answer: "Coastal protection function of mangroves" },
+                    { question: "The Vessel Monitoring System (VMS) is a requirement for commercial vessels to:", options: ["Track fish schools", "Monitor weather conditions", "Allow BFAR to track their location and activity", "Communicate with other vessels"], answer: "Allow BFAR to track their location and activity" },
+                    { question: "A key difference between municipal and commercial fishing under the Code is based on:", options: ["The species of fish caught", "The time of day they fish", "Vessel tonnage", "The type of market they sell to"], answer: "Vessel tonnage" },
+                    { question: "In economics, 'fixed costs' for a fishing operation would include:", options: ["Fuel", "Ice", "Boat loan payments", "Crew share of the catch"], answer: "Boat loan payments" },
+                    { question: "Which law created the National Fisheries Research and Development Institute (NFRDI)?", options: ["RA 7160 (Local Government Code)", "RA 8550 (Fisheries Code)", "RA 8435 (AFMA)", "RA 9147 (Wildlife Act)"], answer: "RA 8435 (AFMA)" },
+                    { question: "An 'externality' in fisheries is a cost or benefit that:", options: ["Is included in the price of fish", "Affects a third party who is not part of the transaction (e.g., pollution)", "Is paid for by the government", "Is related to export markets"], answer: "Affects a third party who is not part of the transaction (e.g., pollution)" },
+                    { question: "The primary purpose of a 'logbook' system for fishing vessels is to:", options: ["Record crew salaries", "Serve as a personal diary for the captain", "Record catch and effort data for management purposes", "Keep track of maintenance schedules"], answer: "Record catch and effort data for management purposes" },
+                    { question: "Under international law, the 'right of innocent passage' allows vessels of one state to:", options: ["Fish in another state's territorial sea", "Pass through the territorial sea of another state continuously and expeditiously", "Conduct military exercises in the territorial sea", "Stop and anchor for any reason"], answer: "Pass through the territorial sea of another state continuously and expeditiously" },
+                    { question: "A 'Fishery Management Plan' is a document that:", options: ["Guarantees profit for fishers", "Outlines the goals and strategies for managing a specific fishery", "Is only required for aquaculture", "Sets the international price for fish"], answer: "Outlines the goals and strategies for managing a specific fishery" }
+                ]
+            }
+        };
+
+        // --- GLOBAL STATE & DOM ELEMENTS ---
+        let geminiApiKey = localStorage.getItem('geminiApiKey');
+        let performanceData = JSON.parse(localStorage.getItem('fisheriesPerformance')) || {};
+        const headerTitle = document.getElementById('header-title');
+        
+        // --- Support / GCash State ---
+        let gcashQrUrl = localStorage.getItem('gcashQrUrl') || '';
+        let gcashName = localStorage.getItem('gcashName') || '';
+
+        // --- QUIZ STATE ---
+        let currentSubject = '';
+        let currentQuestions = [];
+        let questionIndex = 0;
         let score = 0;
-        let activeSubject = "";
-        let currentUser = localStorage.getItem('username');
+        let reviewData = [];
+        let answerSelected = false;
 
-        // Initialization
-        if (currentUser) {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('home-screen').classList.remove('hidden');
-            document.getElementById('user-greeting').textContent = currentUser;
-            updateStats();
-        }
-
-        function handleLogin() {
-            const name = document.getElementById('username-input').value.trim();
-            if (!name) return alert("Enter name");
-            currentUser = name;
-            localStorage.setItem('username', name);
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('home-screen').classList.remove('hidden');
-            document.getElementById('user-greeting').textContent = currentUser;
-        }
-
-        function openSetup(sub) {
-            activeSubject = sub;
-            document.getElementById('setup-subject').textContent = sub;
-            document.getElementById('setup-screen').classList.add('active');
-        }
-
-        function closeSubScreen() {
-            document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
-            updateStats();
-        }
-
-        function startQuiz(count) {
-            let pool = [];
-            if (activeSubject === "Mock Exam") {
-                Object.values(window.quizData).forEach(arr => pool.push(...arr));
-            } else {
-                pool = window.quizData[activeSubject];
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('hasOnboarded')) {
+                document.getElementById('onboarding-modal').classList.remove('hidden');
             }
-
-            // SAFETY CHECK
-            if (!pool || pool.length === 0) {
-                alert("No questions found for " + activeSubject + ". Please add questions in the script tag.");
-                return;
+            initializeTheme();
+            if (!performanceData["Mock Board Exam"]) {
+                performanceData["Mock Board Exam"] = { scores: [], questionsAttempted: [] };
             }
-
-            // Shuffle
-            pool = [...pool].sort(() => 0.5 - Math.random());
-            currentQuiz = pool.slice(0, count);
-            qIndex = 0;
-            score = 0;
-
-            // Update UI
-            document.getElementById('q-total').textContent = currentQuiz.length;
-            document.getElementById('quiz-lbl').textContent = activeSubject;
-            document.getElementById('setup-screen').classList.remove('active');
-            document.getElementById('quiz-screen').classList.add('active');
-            
-            loadQuestion();
-        }
-
-        function loadQuestion() {
-            const q = currentQuiz[qIndex];
-            document.getElementById('q-curr').textContent = qIndex + 1;
-            document.getElementById('progress').style.width = `${((qIndex)/currentQuiz.length)*100}%`;
-            document.getElementById('q-text').textContent = q.q;
-            
-            const optsContainer = document.getElementById('options');
-            optsContainer.innerHTML = '';
-            document.getElementById('quiz-controls').classList.add('hidden');
-            document.getElementById('quiz-controls').classList.remove('flex');
-
-            q.opts.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = "option-btn w-full text-left p-4 card rounded-lg hover:bg-blue-50 transition border-2 border-transparent";
-                btn.textContent = opt;
-                // CRITICAL: Explicit click handler
-                btn.onclick = function() { checkAnswer(this, opt, q.a); };
-                optsContainer.appendChild(btn);
+            Object.keys(fullQuizData).forEach(subject => {
+                if (!performanceData[subject]) {
+                    performanceData[subject] = { scores: [], questionsAttempted: [] };
+                }
             });
+            renderSubjects();
+            updateGeminiFeatureStates();
+            showScreen('home-screen');
+            setupEventListeners();
+            setupOnboarding();
+            updateSupportUI();
+        });
+
+        // --- ONBOARDING LOGIC ---
+        function setupOnboarding() {
+            const modal = document.getElementById('onboarding-modal');
+            const slidesContainer = document.getElementById('onboarding-slides');
+            const nextBtn = document.getElementById('onboarding-next');
+            const prevBtn = document.getElementById('onboarding-prev');
+            const skipBtn = document.getElementById('onboarding-skip');
+            const dotsContainer = document.getElementById('onboarding-dots');
+            const slides = slidesContainer.children;
+            const totalSlides = slides.length;
+            let currentSlide = 0;
+
+            if (totalSlides === 0) return;
+
+            // Set up slides width
+            slidesContainer.style.width = `${totalSlides * 100}%`;
+            Array.from(slides).forEach(slide => {
+                slide.style.width = `${100 / totalSlides}%`;
+            });
+
+
+            for(let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'w-2 h-2 rounded-full bg-slate-300 transition-colors';
+                dotsContainer.appendChild(dot);
+            }
+            const dots = Array.from(dotsContainer.children);
+            
+            function updateOnboardingUI() {
+                slidesContainer.style.transform = `translateX(-${currentSlide * (100 / totalSlides)}%)`;
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle('bg-blue-500', index === currentSlide);
+                });
+                prevBtn.disabled = currentSlide === 0;
+                prevBtn.style.opacity = currentSlide === 0 ? '0' : '1';
+                if (currentSlide === totalSlides - 1) {
+                    nextBtn.textContent = 'Finish';
+                } else {
+                    nextBtn.textContent = 'Next';
+                }
+            }
+            
+            function completeOnboarding() {
+                localStorage.setItem('hasOnboarded', 'true');
+                modal.classList.add('hidden');
+            }
+
+            skipBtn.addEventListener('click', completeOnboarding);
+            
+            nextBtn.addEventListener('click', () => {
+                if (currentSlide < totalSlides - 1) {
+                    currentSlide++;
+                    updateOnboardingUI();
+                } else {
+                    const key = document.getElementById('onboarding-api-key-input').value.trim();
+                    if(key) {
+                       localStorage.setItem('geminiApiKey', key);
+                       updateGeminiFeatureStates();
+                       document.getElementById('api-key-input').value = key;
+                    }
+                    completeOnboarding();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentSlide > 0) {
+                    currentSlide--;
+                    updateOnboardingUI();
+                }
+            });
+
+            updateOnboardingUI();
         }
 
-        function checkAnswer(btn, selected, correct) {
-            // Prevent double clicking by checking if controls are visible
-            if (!document.getElementById('quiz-controls').classList.contains('hidden')) return;
-
-            const allBtns = document.querySelectorAll('.option-btn');
-            
-            if (selected === correct) {
-                score++;
-                btn.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
-                btn.classList.remove('border-transparent');
+        // --- THEME LOGIC ---
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
             } else {
-                btn.classList.add('bg-red-100', 'border-red-500', 'text-red-800');
-                btn.classList.remove('border-transparent');
-                
-                // Highlight correct one
-                allBtns.forEach(b => {
-                    if (b.textContent === correct) {
-                        b.classList.add('bg-green-100', 'border-green-500', 'text-green-800');
-                        b.classList.remove('border-transparent');
-                    }
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'system';
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                 btn.addEventListener('click', () => {
+                    const theme = btn.dataset.theme;
+                    localStorage.setItem('theme', theme);
+                    handleThemeChange(theme);
+                });
+            });
+            handleThemeChange(savedTheme);
+        }
+
+        function handleThemeChange(theme) {
+             if (theme === 'system') {
+                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(systemPrefersDark ? 'dark' : 'light');
+            } else {
+                applyTheme(theme);
+            }
+            document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('text-blue-500'));
+            document.querySelector(`.theme-btn[data-theme="${theme}"]`).classList.add('text-blue-500');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if(localStorage.getItem('theme') === 'system') {
+                handleThemeChange('system');
+            }
+        });
+
+        // --- UI & NAVIGATION ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+
+            const screenTitles = {
+                'home-screen': 'Home', 'subjects-screen': 'Start Quiz',
+                'dashboard-screen': 'Dashboard', 'settings-screen': 'Settings'
+            };
+            headerTitle.textContent = screenTitles[screenId] || 'LCP Fisheries Board Reviewer';
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active-nav', btn.dataset.screen === screenId);
+            });
+            
+            if(screenId === 'home-screen' || screenId === 'dashboard-screen') {
+                updateDashboardData();
+            }
+        }
+        
+        function renderSubjects() {
+            const subjectListContainer = document.getElementById('subject-list-container');
+            subjectListContainer.innerHTML = '';
+            for (const subjectName in fullQuizData) {
+                const subject = fullQuizData[subjectName];
+                const card = document.createElement('div');
+                card.className = 'subject-card card p-4 rounded-xl shadow-md flex items-center gap-4 cursor-pointer card-hover';
+                card.dataset.subject = subjectName;
+                card.innerHTML = `
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold">${subjectName}</h3>
+                        <p class="text-sm text-muted mt-1">${subject.description}</p>
+                    </div>
+                    <img src="${subject.image}" alt="${subjectName}" onerror="this.src='https://placehold.co/100x100/CCCCCC/FFFFFF?text=Image'" class="w-24 h-16 object-cover rounded-lg flex-shrink-0">
+                `;
+                card.addEventListener('click', () => {
+                     document.getElementById('item-select-subject').textContent = subjectName;
+                     showSubScreen('item-selection-screen');
+                });
+                subjectListContainer.appendChild(card);
+            }
+        }
+
+        function showSubScreen(screenId) {
+            document.querySelectorAll('.sub-screen').forEach(s => s.classList.remove('active'));
+            if(screenId) {
+                document.getElementById(screenId).classList.add('active');
+            }
+        }
+
+        // --- DASHBOARD ---
+        function updateDashboardData() {
+            let totalScoresSum = 0;
+            let totalQuestionsSum = 0;
+            let quizzesTakenCount = 0;
+
+            const scoreChartEl = document.getElementById('score-chart');
+            const subjectDetailsEl = document.getElementById('subject-details');
+            const mockExamDashboardEl = document.getElementById('mock-exam-dashboard');
+            const mockExamDetailsEl = document.getElementById('mock-exam-details');
+
+            if(scoreChartEl) scoreChartEl.innerHTML = '';
+            if(subjectDetailsEl) subjectDetailsEl.innerHTML = '';
+            if(mockExamDetailsEl) mockExamDetailsEl.innerHTML = '';
+            if(mockExamDashboardEl) mockExamDashboardEl.classList.add('hidden');
+
+            // Handle Mock Exam Data First
+            if (performanceData["Mock Board Exam"] && performanceData["Mock Board Exam"].scores.length > 0) {
+                if(mockExamDashboardEl) mockExamDashboardEl.classList.remove('hidden');
+                const mockData = performanceData["Mock Board Exam"];
+                mockData.scores.forEach((score, index) => {
+                    const questions = mockData.questionsAttempted[index];
+                    const percentage = questions > 0 ? Math.round((score / questions) * 100) : 0;
+                    const detailContainer = document.createElement('div');
+                    detailContainer.className = 'card p-4 rounded-lg flex justify-between items-center';
+                    detailContainer.innerHTML = `<div><p class="font-bold">Attempt ${index + 1}</p><p class="text-sm text-muted">${score} / ${questions} correct</p></div><div class="text-2xl font-bold">${percentage}%</div>`;
+                    mockExamDetailsEl.appendChild(detailContainer);
                 });
             }
 
-            document.getElementById('quiz-controls').classList.remove('hidden');
-            document.getElementById('quiz-controls').classList.add('flex');
+            const subjectKeys = Object.keys(performanceData).filter(s => s !== 'Mock Board Exam');
+
+            for (const subject of subjectKeys) {
+                const data = performanceData[subject];
+                if (data.scores.length === 0) continue; 
+
+                const subjectTotalScore = data.scores.reduce((a, b) => a + b, 0);
+                const subjectTotalQuestions = data.questionsAttempted.reduce((a, b) => a + b, 0);
+                
+                totalScoresSum += subjectTotalScore;
+                totalQuestionsSum += subjectTotalQuestions;
+                quizzesTakenCount += data.scores.length;
+
+                const average = subjectTotalQuestions > 0 ? Math.round((subjectTotalScore / subjectTotalQuestions) * 100) : 0;
+                
+                if (document.getElementById('dashboard-screen').classList.contains('hidden')) continue;
+            
+                // Add to chart
+                if (scoreChartEl) {
+                    const barContainer = document.createElement('div');
+                    barContainer.className = 'flex-1 flex flex-col items-center h-full justify-end text-center';
+                    barContainer.innerHTML = `
+                        <div class="text-sm font-bold">${average}%</div>
+                        <div class="w-8 md:w-12 bg-blue-200 dark:bg-blue-700 rounded-t-lg chart-bar-fill" style="height: 0%; transition-delay: ${subjectKeys.indexOf(subject) * 100}ms" data-height="${average}%">
+                        </div>
+                        <p class="text-xs text-muted mt-1 break-words">${subject}</p>
+                    `;
+                    scoreChartEl.appendChild(barContainer);
+                }
+
+                // Add to detailed breakdown
+                const detailContainer = document.createElement('div');
+                detailContainer.className = 'card p-4 rounded-lg flex justify-between items-center';
+                detailContainer.innerHTML = `<div><p class="font-bold">${subject}</p><p class="text-sm text-muted">Quizzes taken: ${data.scores.length}</p></div><div class="text-2xl font-bold">${average}%</div>`;
+                subjectDetailsEl.appendChild(detailContainer);
+            }
+            
+            // Animate chart bars after a delay
+            if (scoreChartEl) {
+                setTimeout(() => {
+                    scoreChartEl.querySelectorAll('.chart-bar-fill').forEach(bar => {
+                        bar.style.height = bar.dataset.height;
+                    });
+                }, 100);
+            }
+
+            const overallAverage = totalQuestionsSum > 0 ? Math.round((totalScoresSum / totalQuestionsSum) * 100) : 0;
+            document.getElementById('home-overall-average').textContent = `${overallAverage}%`;
+            document.getElementById('home-quizzes-taken').textContent = quizzesTakenCount;
+        }
+        
+        // --- QUIZ LOGIC ---
+        function startQuiz(subject, numberOfItems) {
+            questionIndex = 0;
+            score = 0;
+            reviewData = [];
+            currentSubject = subject;
+
+            let allQuestions = [];
+            if (subject === "Mock Board Exam") {
+                for (const subj in fullQuizData) {
+                    allQuestions.push(...fullQuizData[subj].questions);
+                }
+            } else {
+                allQuestions = fullQuizData[subject]?.questions || [];
+            }
+            
+            const maxItems = Math.min(numberOfItems, allQuestions.length);
+            currentQuestions = [...allQuestions].sort(() => 0.5 - Math.random()).slice(0, maxItems);
+
+            document.getElementById('quiz-subject').textContent = subject;
+            showSubScreen('quiz-container');
+            displayQuestion();
         }
 
-        function nextQuestion() {
-            qIndex++;
-            if (qIndex < currentQuiz.length) {
-                loadQuestion();
+        function displayQuestion() {
+            if (questionIndex >= currentQuestions.length) {
+                showResults();
+                return;
+            }
+            
+            answerSelected = false;
+            document.getElementById('action-buttons').classList.add('hidden');
+            const question = currentQuestions[questionIndex];
+            
+            document.getElementById('question-number').textContent = questionIndex + 1;
+            document.getElementById('total-questions').textContent = currentQuestions.length;
+            const progressPercentage = ((questionIndex + 1) / currentQuestions.length) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercentage}%`;
+
+            document.getElementById('question-area').textContent = question.question;
+            const optionsArea = document.getElementById('options-area');
+            optionsArea.innerHTML = '';
+            question.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.className = 'w-full text-left p-3 card rounded-lg hover:bg-blue-100 dark:hover:bg-slate-700 transition-colors border border-custom';
+                button.onclick = () => selectAnswer(button, option, question.answer);
+                optionsArea.appendChild(button);
+            });
+            document.getElementById('feedback-area').innerHTML = '';
+        }
+
+        function selectAnswer(button, selectedOption, correctAnswer) {
+            if (answerSelected) return;
+            answerSelected = true;
+
+            reviewData.push({ question: currentQuestions[questionIndex], selected: selectedOption });
+
+            document.querySelectorAll('#options-area button').forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === correctAnswer) {
+                    btn.className = 'w-full text-left p-3 rounded-lg border-2 border-green-500 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 font-semibold';
+                }
+            });
+            
+            if (selectedOption !== correctAnswer) {
+                button.className = 'w-full text-left p-3 rounded-lg border-2 border-red-500 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 font-semibold';
             } else {
-                finishQuiz();
+                 score++;
+            }
+            
+            document.getElementById('action-buttons').classList.remove('hidden');
+        }
+
+        function showResults(fromCancel = false) {
+            const questionsAttempted = fromCancel ? questionIndex : currentQuestions.length;
+            
+            if (questionsAttempted > 0) {
+                 if (!performanceData[currentSubject]) {
+                     performanceData[currentSubject] = { scores: [], questionsAttempted: [] };
+                 }
+                performanceData[currentSubject].scores.push(score);
+                performanceData[currentSubject].questionsAttempted.push(questionsAttempted);
+                localStorage.setItem('fisheriesPerformance', JSON.stringify(performanceData));
+            }
+
+            const percentage = questionsAttempted > 0 ? Math.round((score / questionsAttempted) * 100) : 0;
+            document.getElementById('final-score').textContent = `${percentage}%`;
+            document.getElementById('score-text').textContent = `You answered ${score} out of ${questionsAttempted} questions correctly.`;
+            
+            updateGeminiFeatureStates();
+            showSubScreen('results-container');
+        }
+
+        function showReviewScreen() {
+            const reviewContent = document.getElementById('review-content');
+            reviewContent.innerHTML = ''; // Clear previous content
+
+            reviewData.forEach((item, index) => {
+                const question = item.question;
+                const selected = item.selected;
+                const correct = question.answer;
+                const isCorrect = selected === correct;
+
+                const questionEl = document.createElement('div');
+                questionEl.className = 'p-4 rounded-lg border-custom border';
+                
+                let optionsHTML = '';
+                question.options.forEach(option => {
+                    let optionClass = 'block p-2 my-1 rounded-md';
+                    if (option === correct) {
+                        optionClass += ' bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300';
+                    } else if (option === selected && !isCorrect) {
+                        optionClass += ' bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300';
+                    } else {
+                        optionClass += ' bg-slate-100 dark:bg-slate-800';
+                    }
+                    optionsHTML += `<span class="${optionClass}">${option}</span>`;
+                });
+                
+                questionEl.innerHTML = `
+                    <p class="font-bold mb-2">${index + 1}. ${question.question}</p>
+                    <div>${optionsHTML}</div>
+                `;
+                
+                reviewContent.appendChild(questionEl);
+            });
+
+            showSubScreen('review-screen');
+        }
+
+        // --- SUPPORT (GCash) HELPERS ---
+        function updateSupportUI() {
+            // Populate settings inputs
+            const qrInput = document.getElementById('gcash-qr-url-input');
+            const nameInput = document.getElementById('gcash-name-input');
+            const status = document.getElementById('gcash-status');
+            qrInput.value = gcashQrUrl || '';
+            nameInput.value = gcashName || '';
+            if (gcashQrUrl) {
+                status.textContent = 'Support QR is set and will be displayed to users.';
+                status.className = 'text-sm mb-4 text-center text-green-600';
+            } else {
+                status.textContent = 'No support QR set. Using placeholder image.';
+                status.className = 'text-sm mb-4 text-center text-red-500';
+            }
+
+            // Update modal display
+            const qrImg = document.getElementById('support-qr-img');
+            const nameEl = document.getElementById('support-name');
+            qrImg.src = gcashQrUrl || 'https://placehold.co/300x300/FFFFFF/000000?text=GCash+QR';
+            nameEl.textContent = gcashName || '';
+        }
+
+        function showSupportModal() {
+            document.getElementById('support-modal').classList.add('active');
+            document.getElementById('support-modal').setAttribute('aria-hidden', 'false');
+
+            // update modal contents in case they changed
+            updateSupportUI();
+            // If there's a QR URL and it's a data URL or external link, enable "Open" action
+            const openLink = document.getElementById('support-open-link');
+            if (gcashQrUrl) {
+                openLink.href = gcashQrUrl;
+                openLink.classList.remove('hidden');
+                openLink.textContent = 'Open QR';
+            } else {
+                openLink.classList.add('hidden');
             }
         }
 
-        function finishQuiz() {
-            const pct = Math.round((score / currentQuiz.length) * 100);
-            
-            // Save Stats
-            let stats = JSON.parse(localStorage.getItem('fisheriesStats')) || { count: 0, totalScore: 0 };
-            stats.count++;
-            stats.totalScore += pct;
-            localStorage.setItem('fisheriesStats', JSON.stringify(stats));
-
-            document.getElementById('final-score').textContent = pct + "%";
-            document.getElementById('quiz-screen').classList.remove('active');
-            document.getElementById('result-screen').classList.add('active');
+        function closeSupportModal() {
+            document.getElementById('support-modal').classList.remove('active');
+            document.getElementById('support-modal').setAttribute('aria-hidden', 'true');
         }
 
-        function updateStats() {
-            let stats = JSON.parse(localStorage.getItem('fisheriesStats')) || { count: 0, totalScore: 0 };
-            document.getElementById('home-count').textContent = stats.count;
-            const avg = stats.count ? Math.round(stats.totalScore / stats.count) : 0;
-            document.getElementById('home-avg').textContent = avg + "%";
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => { showScreen(btn.dataset.screen); });
+            });
+
+            document.getElementById('save-api-key-btn').addEventListener('click', () => {
+                const key = document.getElementById('api-key-input').value.trim();
+                const statusEl = document.getElementById('api-key-status');
+                if (key) {
+                    localStorage.setItem('geminiApiKey', key);
+                    geminiApiKey = key;
+                    statusEl.textContent = 'API Key saved successfully!';
+                    statusEl.className = 'text-sm mb-4 text-center text-green-600';
+                } else {
+                    localStorage.removeItem('geminiApiKey');
+                    geminiApiKey = null;
+                    statusEl.textContent = 'API Key removed.';
+                    statusEl.className = 'text-sm mb-4 text-center text-yellow-600';
+                }
+                updateGeminiFeatureStates();
+            });
+            
+            document.getElementById('item-buttons').addEventListener('click', (e) => {
+                if(e.target.classList.contains('item-select-btn')) {
+                    const subject = document.getElementById('item-select-subject').textContent;
+                    const numItems = parseInt(e.target.dataset.items, 10);
+                    startQuiz(subject, numItems);
+                }
+            });
+
+            document.getElementById('mock-exam-card').addEventListener('click', () => {
+                startQuiz("Mock Board Exam", 100);
+            });
+
+            document.getElementById('back-to-subjects-btn').addEventListener('click', () => showSubScreen(null));
+            document.getElementById('continue-btn').addEventListener('click', () => {
+                questionIndex++;
+                displayQuestion();
+            });
+            document.getElementById('cancel-btn').addEventListener('click', () => showResults(true));
+            document.getElementById('restart-btn').addEventListener('click', () => {
+                showSubScreen(null);
+                showScreen('dashboard-screen');
+            });
+
+            document.getElementById('review-answers-btn').addEventListener('click', showReviewScreen);
+            document.getElementById('review-back-btn').addEventListener('click', () => showSubScreen('results-container'));
+
+            document.getElementById('scenario-challenge-card').addEventListener('click', (e) => {
+                if(e.currentTarget.classList.contains('disabled-card')) return;
+                showSubScreen('scenario-screen');
+            });
+             document.getElementById('field-intel-card').addEventListener('click', (e) => {
+                if(e.currentTarget.classList.contains('disabled-card')) return;
+                showSubScreen('intel-screen');
+            });
+            
+            document.getElementById('scenario-back-btn').addEventListener('click', () => showSubScreen(null));
+            document.getElementById('intel-back-btn').addEventListener('click', () => showSubScreen(null));
+
+            document.getElementById('api-key-input').value = geminiApiKey || '';
+            updateApiKeyStatus();
+
+            // Support event listeners
+            document.getElementById('support-btn').addEventListener('click', showSupportModal);
+            document.getElementById('support-floating').addEventListener('click', showSupportModal);
+            document.getElementById('support-close').addEventListener('click', closeSupportModal);
+            document.getElementById('support-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('support-modal')) closeSupportModal();
+            });
+
+            document.getElementById('support-copy-btn').addEventListener('click', () => {
+                // copy available info (gcash name or qr url) to clipboard
+                const toCopy = gcashName || gcashQrUrl || 'Support LCP Fisheries Reviewer';
+                navigator.clipboard?.writeText(toCopy).then(() => {
+                    const btn = document.getElementById('support-copy-btn');
+                    const original = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => btn.textContent = original, 1400);
+                }).catch(() => alert('Copy not supported on this device.'));
+            });
+
+            // Save / Clear GCash in settings
+            document.getElementById('save-gcash-btn').addEventListener('click', () => {
+                const qr = document.getElementById('gcash-qr-url-input').value.trim();
+                const name = document.getElementById('gcash-name-input').value.trim();
+                if(qr) {
+                    localStorage.setItem('gcashQrUrl', qr);
+                    gcashQrUrl = qr;
+                } else {
+                    localStorage.removeItem('gcashQrUrl');
+                    gcashQrUrl = '';
+                }
+                if(name) {
+                    localStorage.setItem('gcashName', name);
+                    gcashName = name;
+                } else {
+                    localStorage.removeItem('gcashName');
+                    gcashName = '';
+                }
+                updateSupportUI();
+                const status = document.getElementById('gcash-status');
+                status.textContent = 'Support info saved!';
+                status.className = 'text-sm mb-4 text-center text-green-600';
+                setTimeout(() => updateSupportUI(), 1000);
+            });
+            document.getElementById('clear-gcash-btn').addEventListener('click', () => {
+                localStorage.removeItem('gcashQrUrl');
+                localStorage.removeItem('gcashName');
+                gcashQrUrl = '';
+                gcashName = '';
+                updateSupportUI();
+            });
+
+        }
+
+        function updateApiKeyStatus() {
+            const statusEl = document.getElementById('api-key-status');
+            if(localStorage.getItem('geminiApiKey')) {
+                statusEl.textContent = 'An API Key is currently saved.';
+                statusEl.className = 'text-sm mb-4 text-center text-green-600';
+            } else {
+                statusEl.textContent = 'No API Key is set. AI features are disabled.';
+                statusEl.className = 'text-sm mb-4 text-center text-red-500';
+            }
+        }
+        function updateGeminiFeatureStates() {
+            const hasKey = !!localStorage.getItem('geminiApiKey');
+            document.querySelectorAll('.gemini-feature').forEach(feature => {
+                feature.classList.toggle('disabled-card', !hasKey);
+            });
+             updateApiKeyStatus();
         }
     </script>
 </body>
